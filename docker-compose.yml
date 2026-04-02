@@ -1,0 +1,24 @@
+services:
+  skin_disease_app:
+    build:
+      context: .
+      dockerfile: Dockerfile # Set to Dockerfile.gpu for GPU support
+    container_name: skin_disease_ai
+    ports:
+      - "8000:8000"
+      - "8501:8501"
+    environment:
+      # Use host.docker.internal to reach Ollama running on your host machine
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - LLM_PROVIDER=Ollama # Or Ollama
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - ENV_MODE=prod
+    volumes:
+      # Persist data outside the container
+      - ./data/db:/app/data/db
+      - ./data/uploads:/app/data/uploads
+      - ./logs:/app/logs
+    # Allow the container to reach the host's localhost (Ollama)
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped

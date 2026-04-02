@@ -1,0 +1,21 @@
+scripts:
+  # Setup & Installation
+  install: uv sync
+  
+  # Running the Application
+  run: uv run python main.py
+  dev: uv run uvicorn main:app --reload
+  ui: uv run streamlit run ui.py
+  
+  # Testing & Quality
+  test: uv run pytest
+  test-v: uv run pytest -v
+  
+  # Maintenance
+  clean: 
+    - powershell -Command "Remove-Item -Path logs/*.log -ErrorAction SilentlyContinue"
+    - powershell -Command "Remove-Item -Path data/uploads/*.jpg -ErrorAction SilentlyContinue"
+  
+  # Docker
+  docker-build: docker build -t skin-disease-app .
+  docker-run: docker run -p 8000:8000 skin-disease-app

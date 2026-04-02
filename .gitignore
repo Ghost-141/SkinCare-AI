@@ -1,0 +1,52 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+.pytest_cache/
+.coverage
+htmlcov/
+*.pdf
+*.jpg
+*.ipynb
+
+# Virtual environments
+.venv/
+env/
+venv/
+ENV/
+
+# Environment variables (SECURITY)
+.env
+.env.dev
+.env.staging
+.env.prod
+.env.*
+!.env.example
+
+# Database (SQLite)
+data/db/*.db
+data/db/*.sqlite3
+
+# Uploads & Data
+data/uploads/*
+!data/uploads/.gitkeep
+
+# Logs
+logs/*.log
+*.log
+
+# Model Weights (Large binary files)
+models/weights/*.pt
+models/weights/*.pth
+models/weights/*.h5
+models/weights/*.onnx
+
+# OS & IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.python-version

@@ -1,0 +1,35 @@
+# Git & IDE
+.git
+.gitignore
+.vscode
+.idea
+.python-version
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache
+.venv
+env/
+venv/
+build/
+dist/
+
+# Project Specific Data
+data/db/*.db
+data/db/*.sqlite3
+data/uploads/*
+!data/uploads/.gitkeep
+logs/*
+*.log
+
+# Training Artifacts
+scripts/output/
+models_extracted.py
+extract_nb.py
+
+# Env files
+.env
+.env.*
+!.env.example
