@@ -5,7 +5,6 @@ from models.db_models import Base
 from utils.logger import logger
 
 # Create the SQLAlchemy engine
-# connect_args={"check_same_thread": False} is needed for SQLite
 engine = create_engine(settings.DATABASE_URL, connect_args={"check_same_thread": False})
 
 # Create a session factory

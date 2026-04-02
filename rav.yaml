@@ -3,7 +3,6 @@ scripts:
   install: uv sync
   
   # Running the Application
-  run: uv run python main.py
   dev: uv run uvicorn main:app --reload
   ui: uv run streamlit run ui.py
   

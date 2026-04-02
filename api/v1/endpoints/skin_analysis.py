@@ -11,7 +11,8 @@ from typing import List
 from models.schemas import AnalysisResponse
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
-from core.dependency import SessionLocal, get_db
+from core.db import SessionLocal, commit_to_db
+from core.dependency import get_db, get_skin_service, get_advisor_service
 from services.skin_service import SkinService
 from services.advisor_service import AdvisorService
 from models.db_models import SkinAnalysisLog
@@ -22,12 +23,9 @@ import shutil
 import os
 import uuid
 import json
-import asyncio
-from datetime import datetime
+from datetime import datetime, timezone
 
 router = APIRouter()
-skin_service = SkinService()
-advisor_service = AdvisorService()
 
 
 def log_to_db(
@@ -67,6 +65,8 @@ async def analyze_skin(
     age: int = Form(...),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
+    skin_service: SkinService = Depends(get_skin_service),
+    advisor_service: AdvisorService = Depends(get_advisor_service)
 ):
     """Single API for image classification and streaming LLM advice."""
     try:
@@ -94,7 +94,7 @@ async def analyze_skin(
                 "age": age,
                 "prediction": prediction,
                 "accuracy": confidence,
-                "created_at": datetime.utcnow().isoformat(),
+                "created_at": datetime.now(timezone.utc).isoformat(),
             }
             # We use a separator to help the UI distinguish metadata from tokens
             yield json.dumps(metadata) + "||METADATA_END||"

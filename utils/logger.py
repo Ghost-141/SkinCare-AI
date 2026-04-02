@@ -1,7 +1,7 @@
 import logging
 import sys
 from pathlib import Path
-from logging.handlers import TimedRotatingFileHandler
+from datetime import datetime
 
 # Create logs directory if it doesn't exist
 log_dir = Path("logs")
@@ -21,16 +21,14 @@ def setup_logger(name: str):
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setFormatter(formatter)
     
-    # Timed Rotating File Handler (Creates a new log file every day at midnight)
-    file_handler = TimedRotatingFileHandler(
-        filename=log_dir / "app.log",
-        when="midnight",
-        interval=1,
-        backupCount=30,  # Keep logs for 30 days
+    # Date-Stamped File Handler
+    # This approach is Windows-safe because it doesn't require renaming an active file.
+    # It creates a new file for each day the application is run.
+    current_date = datetime.now().strftime("%Y-%m-%d")
+    file_handler = logging.FileHandler(
+        filename=log_dir / f"app_{current_date}.log",
         encoding="utf-8"
     )
-    # Ensure rotated files have .log.YYYY-MM-DD suffix
-    file_handler.suffix = "%Y-%m-%d"
     file_handler.setFormatter(formatter)
     
     # Add handlers to the logger
