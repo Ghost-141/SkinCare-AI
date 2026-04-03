@@ -16,10 +16,10 @@ A production-grade medical AI system for skin disease classification and LLM-pow
 
 ## 🛠️ Tech Stack
 
-- **Backend:** FastAPI (Python 3.11)
+- **Backend:** FastAPI (Python 3.13)
 - **Frontend:** Streamlit
-- **Database:** SQLAlchemy (SQLite for Dev, easily portable to PostgreSQL)
-- **AI/ML:** PyTorch, TorchScript
+- **Database:** SQLAlchemy (SQLite for Development)
+- **AI/ML:** PyTorch
 - **LLM:** Groq API / Ollama (Local Llama 3.2:3b)
 - **Deployment:** Docker & Docker Compose
 
@@ -28,15 +28,16 @@ A production-grade medical AI system for skin disease classification and LLM-pow
 ## 📋 Project Setup
 
 ### 1. Prerequisites
-- Python 3.11+
-- [Ollama](https://ollama.ai/) (for local LLM)
+- Python 3.13
+- [Ollama](https://ollama.ai/) (Optional for local LLM)
+- Groq API Key for using Cloud LLM
 - Docker & Docker Compose (For containerized deployment)
 
-### 2. Local Installation
+### 2. Installation
 1. **Clone the repository:**
    ```bash
    git clone https://github.com/Ghost-141/SkinCare-AI.git
-   cd skin_disease
+   cd SkinCare-AI
    ```
 
 2. **Create and activate a virtual environment:**
@@ -61,7 +62,7 @@ ENV_MODE=dev
 # LLM Provider: Groq or Ollama
 LLM_PROVIDER=Groq
 GROQ_API_KEY=your_gsk_key_here
-GROQ_MODEL=llama-3.3-70b-versatile
+GROQ_MODEL=llama-3.1-8b-instant
 
 # Ollama Settings (if using local)
 OLLAMA_BASE_URL=http://localhost:11434
@@ -72,18 +73,39 @@ DATABASE_URL=sqlite:///./data/db/skin_app.db
 UPLOAD_DIR=data/uploads
 ```
 
-### 4. Local LLM Setup (Ollama)
-If you prefer to run the LLM locally for privacy or offline use:
+### 4. LLM Setup 
 
-1. **Install Ollama:** Download and install from [ollama.ai](https://ollama.ai/).
-2. **Pull the required model:**
-   ```bash
-   ollama pull llama3.2:3b
-   ```
-3. **Configure Environment:** Ensure your `.env` file has `LLM_PROVIDER=Ollama` and `OLLAMA_MODEL=llama3.2:3b`.
-4. **CORS/Docker Note:** If running the backend in Docker while Ollama is on the host, the `OLLAMA_BASE_URL` is automatically handled by the `docker-compose.yml` via `host.docker.internal`.
+- ### Ollama
 
----
+  If you prefer to run the LLM locally for privacy or offline use:
+
+  1. **Install Ollama:** Download and install from [ollama.ai](https://ollama.ai/).
+  2. **Pull the required model:**
+      ```bash
+      ollama pull llama3.2:3b
+      ```
+  3. **Configure Environment:** Ensure your `.env` file has `LLM_PROVIDER=Ollama` and `OLLAMA_MODEL=llama3.2:3b`.
+  4. **CORS/Docker Note:** If running the backend in Docker while Ollama is on the host, the `OLLAMA_BASE_URL` is automatically handled by the `docker-compose.yml` via `host.docker.internal`.
+
+- ### Groq Cloud LLM
+  If you prefer to use models from cloud provides your can use groq.  
+  1. Create an account at [Groq](https://console.groq.com/keys)
+  2. Create an API Key from the `API Keys` tab.
+  3. Put the api key in the `.env` at `GROQ_API_KEY` and ensure the `LLM Provider=Groq`.
+
+
+## Run the Project
+
+- To run backend use the following commnad:
+  ```bash
+  rav run dev
+  ```
+- To run the frontend use the following command:
+  ```bash
+  rav run ui
+  ```
+Access the backend: `http://127.0.0.1:8000/docs`
+Access the frontend: 
 
 ## 🐳 Docker Deployment
 
@@ -141,7 +163,6 @@ Retrieves all past scan records for a specific patient.
 
 **Response Body:**
 ```json
-[
   {
     "id": 1,
     "user_id": "PATIENT-123",
@@ -154,7 +175,7 @@ Retrieves all past scan records for a specific patient.
     "llm_provider": "Ollama",
     "created_at": "2026-04-02T12:00:00Z"
   }
-]
+
 ```
 
 ### 🏥 System Health
@@ -167,12 +188,6 @@ Checks the operational status of all backend dependencies.
   "status": "healthy",
   "services": {
     "database": "online",
-    "disk": {
-      "total_gb": 100.0,
-      "used_gb": 10.0,
-      "free_gb": 90.0,
-      "status": "ok"
-    },
     "skin_model": {
       "status": "loaded",
       "device": "cpu",
@@ -197,7 +212,7 @@ Lists all available pre-trained model weights in the system.
     "resnet.pt",
     "efficientet.pt"
   ],
-  "active_model": "resnet.pt"
+  "active_model": "resnet_v1.pt"
 } 
 ```
 
@@ -215,8 +230,8 @@ Switches between the available pre-trained skin-disease model.
 ```
 
 ## 🧠 Model Training
-
-The scripts folder contains a script for training models in local environment including the following models:
+The model was mainly trained on kaggle for better gpu support and longer training. However, with strong GPU we can train the model on our local environment. The scripts folder contains the training scripts to train, plot and save the models for deployment.
+Currently, it supports training the following models:
 1. `Resnet50`
 2. `EfficientNet_b0`
 
@@ -224,30 +239,28 @@ The scripts folder contains a script for training models in local environment in
 ```bash
 python scripts/train.py --data_path "C:/path/to/dataset" --model_type resnet --epochs 20
 ```
-  **Outputs:** Models, class mappings, training history plots, and confusion matrices are saved in `scripts/output/<model_type>/`.
+**Outputs:** It contains model weights, training history plots, confusion matrix under the `scripts/output/<model_type>/`.
 
 ---
 
 ## 📁 Directory Structure
 ```markdown
-.
-├── app/             # Main Application Package
-│   ├── api/         # API Route Handlers
-│   │   └── v1/      # Versioned API Endpoints
-│   ├── core/        # Shared Core Logic
-│   │   ├── config.py           # Environment Variables & Settings
-│   │   ├── db.py               # Database Connection (SQLite/Postgres)
-│   │   └── dependency.py       # FastAPI Dependencies (Auth, DB)
-│   ├── models/      # Data Structures
-│   │   ├── db_models.py        # SQLAlchemy/Tortoise DB Models
-│   │   ├── schemas.py          # Pydantic Request/Response Models
+├── app/             
+│   ├── api/         
+│   │   └── v1/      
+│   ├── core/        
+│   │   ├── config.py            
+│   │   └── dependency.py       
+│   ├── models/      
+│   │   ├── db_models.py       
+│   │   ├── schemas.py         
 │   │   └── weights/            # .pt Model weight Files
-│   ├── services/    # Business & AI Logic
+│   ├── services/    
 │   │   ├── interface/          # Abstract Base Classes (Interfaces)
 │   │   ├── skin_service.py     # CNN Inference (TorchScript)
-│   │   └── advisor_service.py  # LLM Logic (Gemini/Ollama)
-│   ├── system_prompts/         # LLM Prompt Management
-│   │   └── prompt_v1.py        # Medical Advice Prompt Templates
+│   │   └── advisor_service.py  # LLM Logic (Groq/Ollama)
+│   ├── system_prompts/         # Prompt templates
+│   │   └── prompt_v1.py         
 │   └── utils/       # Helper Modules & External Clients
 │       ├── groq_client.py      # Groq Cloud API Wrapper
 │       ├── ollama_client.py    # Ollama LLM Wrapper
@@ -256,8 +269,9 @@ python scripts/train.py --data_path "C:/path/to/dataset" --model_type resnet --e
 ├── data/          
 │   ├── db/                     # Local Database Files
 │   ├── uploads/                # Temporary Storage for User Images
-│   ├── class_mapping.json      # CNN Class Index -> Disease Name
-│   └── product_info.json       # Recommended Products Metadata
+│   ├── class_mapping.json   # CNN 
+Class Index -> Disease Name
+│
 ├── scripts/         # Training Scripts
 │   └── train.py                # Model Training Script
 ├── tests/           # Automated Testing
