@@ -3,39 +3,51 @@ import sys
 from pathlib import Path
 from datetime import datetime
 
-# Create logs directory if it doesn't exist
-log_dir = Path("logs")
-log_dir.mkdir(exist_ok=True)
 
-# Centralized Logger Configuration
-def setup_logger(name: str):
+def _get_log_dir() -> Path:
+    project_log_dir = Path(__file__).parent.parent / "logs"
+    try:
+        project_log_dir.mkdir(parents=True, exist_ok=True)
+        # Verify we can actually write to it
+        test_file = project_log_dir / ".write_test"
+        test_file.touch()
+        test_file.unlink()
+        return project_log_dir
+    except (PermissionError, OSError):
+        fallback_path = Path.home() / ".skincare_ai" / "logs"
+        fallback_path.mkdir(parents=True, exist_ok=True)
+        print(
+            f"Warning: Project 'logs' directory is not writable. Logging to: {fallback_path}"
+        )
+        return fallback_path
+
+
+def setup_logger(name: str) -> logging.Logger:
     logger = logging.getLogger(name)
+    if logger.handlers:
+        return logger
+
     logger.setLevel(logging.INFO)
-    
-    # Formatter
     formatter = logging.Formatter(
         "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     )
-    
-    # Console Handler
+
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setFormatter(formatter)
-    
-    # Date-Stamped File Handler
-    # This approach is Windows-safe because it doesn't require renaming an active file.
-    # It creates a new file for each day the application is run.
+    logger.addHandler(console_handler)
+
+    log_dir = _get_log_dir()
     current_date = datetime.now().strftime("%Y-%m-%d")
-    file_handler = logging.FileHandler(
-        filename=log_dir / f"app_{current_date}.log",
-        encoding="utf-8"
-    )
-    file_handler.setFormatter(formatter)
-    
-    # Add handlers to the logger
-    if not logger.handlers:
-        logger.addHandler(console_handler)
+    try:
+        file_handler = logging.FileHandler(
+            filename=log_dir / f"app_{current_date}.log", encoding="utf-8"
+        )
+        file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)
-        
+    except (PermissionError, OSError) as e:
+        logger.warning(f"Could not create log file: {e}. Logging to console only.")
+
     return logger
+
 
 logger = setup_logger("skin_app")

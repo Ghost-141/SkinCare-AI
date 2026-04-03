@@ -2,7 +2,7 @@ from services.interface.chat_interface import IChatAdvisor
 from utils.groq_client import GroqClient
 from utils.ollama_client import OllamaClient
 from core.config import settings
-from system_prompts.prompt_v1 import SYSTEM_ADVISOR_PROMPT, SYSTEM_CHAT_PROMPT
+from system_prompts.prompt_v1 import SYSTEM_ADVISOR_PROMPT
 from utils.logger import logger
 
 

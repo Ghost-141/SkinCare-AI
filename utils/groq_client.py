@@ -1,7 +1,7 @@
-import os
 from groq import Groq
 from core.config import settings
 from utils.logger import logger
+
 
 class GroqClient:
     def __init__(self):

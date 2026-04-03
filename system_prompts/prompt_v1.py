@@ -13,7 +13,3 @@ Present the recommendation in clear Markdown format with the following sections.
 ### General Care
 [Provide general skin care tips]
 """
-
-SYSTEM_CHAT_PROMPT = """
-You are a skin care assistant. Help the user with their questions about skin health and dermatological conditions.
-"""
