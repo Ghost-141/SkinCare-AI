@@ -12,9 +12,9 @@ class Settings(BaseSettings):
     # LLM Settings
     LLM_PROVIDER: str = "Groq"  # Groq or Ollama
     GROQ_API_KEY: str = ""
-    GROQ_MODEL: str = "llama-3.3-70b-versatile"
+    GROQ_MODEL: str = ""
     OLLAMA_BASE_URL: str = "http://localhost:11434"
-    OLLAMA_MODEL: str = "llama3"
+    OLLAMA_MODEL: str = "llama3.2:3b"
     OLLAMA_KEEP_ALIVE: int = -1
 
     # Model & Storage Settings

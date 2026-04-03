@@ -1,29 +1,38 @@
 # Use a slim Python 3.11 base image
-FROM python:3.11-slim
+FROM python:3.13-slim
 
-# Set environment variables to prevent Python from writing .pyc files and to buffer output
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+# Install uv directly from the official image
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 ENV ENV_MODE=prod
+# Ensure uv uses the system python environment
+ENV UV_SYSTEM_PYTHON=1 
 
-# Install system-level dependencies (required for some image processing libs)
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libgl1-mesa-glx \
-    libglib2.0-0 \
+# Install system-level dependencies
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
     build-essential \
+    libgl1 \
+    libglib2.0-0 \
+    libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
-# Set the working directory in the container
+# Set the working directory
 WORKDIR /app
 
-# Copy only the requirements file first to leverage Docker's layer caching
-COPY requirements.txt .
+# Copy the configuration files first for better caching
+# We need both pyproject.toml and uv.lock (if you have one)
+COPY pyproject.toml uv.lock ./
 
-# Install CPU-specific PyTorch to keep the image small (~1GB vs 5GB)
-RUN pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu
+# Install CPU-specific PyTorch first (to keep image slim)
+# --find-links allows uv to pick the CPU wheels
+RUN uv pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
 
-# Install the rest of the dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Install the remaining dependencies from pyproject.toml
+RUN uv pip install . --no-cache
 
 # Copy the rest of the application code
 COPY . .
@@ -31,15 +40,14 @@ COPY . .
 # Create necessary directories
 RUN mkdir -p data/db data/uploads logs
 
-# Expose ports for FastAPI (8000) and Streamlit (8501)
+# Expose ports
 EXPOSE 8000
 EXPOSE 8501
 
-# Create a startup script to run both processes
+# Create startup script
 RUN echo "#!/bin/bash\n\
 uvicorn main:app --host 0.0.0.0 --port 8000 & \n\
 streamlit run ui.py --server.port 8501 --server.address 0.0.0.0 \n\
 " > /app/start.sh && chmod +x /app/start.sh
 
-# Run the startup script
 CMD ["/app/start.sh"]

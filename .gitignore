@@ -39,7 +39,6 @@ logs/*.log
 *.log
 
 # Model Weights (Large binary files)
-models/weights/*.pt
 models/weights/*.pth
 models/weights/*.h5
 models/weights/*.onnx
