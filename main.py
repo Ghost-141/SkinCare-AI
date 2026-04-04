@@ -1,5 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from api.v1.router import api_router
 from core.config import settings
 from core.dependency import create_db_and_tables
@@ -13,7 +15,14 @@ from contextlib import asynccontextmanager
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    create_db_and_tables()
+    # Ensure database directory exists
+    if settings.DATABASE_URL.startswith("sqlite:///"):
+        db_path = settings.DATABASE_URL.replace("sqlite:///", "")
+        db_dir = os.path.dirname(db_path)
+        if db_dir:
+            os.makedirs(db_dir, exist_ok=True)
+
+    # Ensure upload directory exists
     try:
         os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
     except PermissionError:
@@ -23,6 +32,10 @@ async def lifespan(app: FastAPI):
         logger.warning(
             f"Upload directory not accessible. Using fallback: {fallback_path}"
         )
+
+    # Initialize tables
+    create_db_and_tables()
+    
     logger.info("Application started")
     yield
     logger.info("Application shutdown")
@@ -73,6 +86,40 @@ async def log_requests(request: Request, call_next):
             f"Time: {duration:.3f}s"
         )
         raise
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    logger.warning(
+        f"Validation Error | "
+        f"Path: {request.url.path} | "
+        f"Errors: {exc.errors()} | "
+        f"Body: {exc.body}"
+    )
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors(), "body": exc.body},
+    )
+
+
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    if exc.status_code >= 500:
+        logger.error(
+            f"Server Error {exc.status_code} | "
+            f"Path: {request.url.path} | "
+            f"Detail: {exc.detail}"
+        )
+    else:
+        logger.warning(
+            f"HTTP Error {exc.status_code} | "
+            f"Path: {request.url.path} | "
+            f"Detail: {exc.detail}"
+        )
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail},
+    )
 
 
 @app.get("/")
