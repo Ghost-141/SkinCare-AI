@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from api.v1.router import api_router
 from core.config import settings
@@ -6,13 +6,13 @@ from core.dependency import create_db_and_tables
 from core.logger import logger
 import uvicorn
 import os
+import time
 from pathlib import Path
 from contextlib import asynccontextmanager
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Initialize Database
     create_db_and_tables()
     try:
         os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
@@ -23,9 +23,9 @@ async def lifespan(app: FastAPI):
         logger.warning(
             f"Upload directory not accessible. Using fallback: {fallback_path}"
         )
-    logger.info("Application starting up...")
+    logger.info("Application started")
     yield
-    logger.info("Application shutting down...")
+    logger.info("Application shutdown")
 
 
 app = FastAPI(
@@ -36,7 +36,45 @@ app = FastAPI(
 )
 
 
-# Override the default message of API
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start_time = time.time()
+
+    # Log request
+    logger.info(
+        f"→ {request.method} {request.url.path} | Client: {request.client.host if request.client else 'unknown'}"
+    )
+
+    try:
+        response = await call_next(request)
+        duration = time.time() - start_time
+
+        # Log response based on status
+        if response.status_code >= 400:
+            logger.warning(
+                f"← {request.method} {request.url.path} | "
+                f"Status: {response.status_code} | "
+                f"Time: {duration:.3f}s"
+            )
+        else:
+            logger.info(
+                f"← {request.method} {request.url.path} | "
+                f"Status: {response.status_code} | "
+                f"Time: {duration:.3f}s"
+            )
+
+        return response
+
+    except Exception as e:
+        duration = time.time() - start_time
+        logger.error(
+            f"✗ {request.method} {request.url.path} | "
+            f"Error: {str(e)} | "
+            f"Time: {duration:.3f}s"
+        )
+        raise
+
+
 @app.get("/")
 async def root():
     return JSONResponse(
@@ -48,9 +86,14 @@ async def root():
     )
 
 
-# Include API Router
 app.include_router(api_router, prefix="/api/v1")
 
 if __name__ == "__main__":
     is_dev = settings.ENV_MODE == "dev"
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=is_dev)
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=is_dev,
+        log_level="warning",  # Suppress uvicorn's INFO logs
+    )

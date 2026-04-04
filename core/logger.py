@@ -1,53 +1,36 @@
-import logging
-import sys
+from loguru import logger
 from pathlib import Path
-from datetime import datetime
+import sys
 
 
 def _get_log_dir() -> Path:
     project_log_dir = Path(__file__).parent.parent / "logs"
     try:
         project_log_dir.mkdir(parents=True, exist_ok=True)
-        # Verify we can actually write to it
-        test_file = project_log_dir / ".write_test"
-        test_file.touch()
-        test_file.unlink()
         return project_log_dir
     except (PermissionError, OSError):
         fallback_path = Path.home() / ".skincare_ai" / "logs"
         fallback_path.mkdir(parents=True, exist_ok=True)
-        print(
-            f"Warning: Project 'logs' directory is not writable. Logging to: {fallback_path}"
-        )
         return fallback_path
 
 
-def setup_logger(name: str) -> logging.Logger:
-    logger = logging.getLogger(name)
-    if logger.handlers:
-        return logger
+# Remove default handler
+logger.remove()
 
-    logger.setLevel(logging.INFO)
-    formatter = logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    )
+# Console: Only show WARNING and above (less noise)
+logger.add(
+    sys.stdout,
+    format="<green>{time:HH:mm:ss}</green> | <level>{level: <8}</level> | <level>{message}</level>",
+    level="WARNING",  # Only warnings and errors in console
+    colorize=True,
+)
 
-    console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setFormatter(formatter)
-    logger.addHandler(console_handler)
-
-    log_dir = _get_log_dir()
-    current_date = datetime.now().strftime("%Y-%m-%d")
-    try:
-        file_handler = logging.FileHandler(
-            filename=log_dir / f"app_{current_date}.log", encoding="utf-8"
-        )
-        file_handler.setFormatter(formatter)
-        logger.addHandler(file_handler)
-    except (PermissionError, OSError) as e:
-        logger.warning(f"Could not create log file: {e}. Logging to console only.")
-
-    return logger
-
-
-logger = setup_logger("skin_app")
+# File: Log everything with details
+log_dir = _get_log_dir()
+logger.add(
+    log_dir / "app_{time:YYYY-MM-DD}.log",
+    rotation="00:00",
+    retention="30 days",
+    format="{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {message}",
+    level="INFO",  # Log everything to file
+)
