@@ -3,11 +3,10 @@ from fastapi.responses import JSONResponse
 from api.v1.router import api_router
 from core.config import settings
 from core.dependency import create_db_and_tables
-from utils.logger import logger
+from core.logger import logger
 import uvicorn
 import os
 from pathlib import Path
-
 from contextlib import asynccontextmanager
 
 

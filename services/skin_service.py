@@ -3,14 +3,16 @@ from pathlib import Path
 import torch
 import warnings
 
-# Suppress TorchScript load deprecation warning as it is triggered by the library itself
-warnings.filterwarnings("ignore", category=DeprecationWarning, message="`torch.jit.load` is deprecated")
+# Suppress TorchScript load deprecation warning
+warnings.filterwarnings(
+    "ignore", category=DeprecationWarning, message="`torch.jit.load` is deprecated"
+)
 
 from torchvision import models, transforms
 from PIL import Image
 from services.interface.analysis_interface import ISkinAnalysis
 from core.config import settings
-from utils.logger import logger
+from core.logger import logger
 import os
 
 

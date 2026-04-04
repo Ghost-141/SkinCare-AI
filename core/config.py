@@ -6,7 +6,7 @@ from functools import lru_cache
 class Settings(BaseSettings):
     """Base configuration common to all environments."""
 
-    APP_NAME: str = "SkinDiseaseAnalysis"
+    APP_NAME: str = "SkinCare_AI"
     ENV_MODE: str = "dev"  # dev, staging, prod
 
     # LLM Settings
@@ -21,6 +21,11 @@ class Settings(BaseSettings):
     MODEL_PATH: str = "models/weights/resnet_v1.pt"
     DATABASE_URL: str = "sqlite:///./data/db/skin_app.db"
     UPLOAD_DIR: str = "data/uploads"
+
+    # File Upload Restrictions
+    MAX_FILE_SIZE: int = 2 * 1024 * 1024  # 10MB
+    ALLOWED_EXTENSIONS: str = ".jpg,.jpeg,.png"
+    ALLOWED_IMAGE_TYPES: str = "jpeg,png"  # PIL format names
 
     model_config = SettingsConfigDict(
         env_file=".env",

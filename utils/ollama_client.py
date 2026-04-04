@@ -1,7 +1,7 @@
 import httpx
 import json
 from core.config import settings
-from utils.logger import logger
+from core.logger import logger
 from typing import AsyncGenerator
 
 class OllamaClient:

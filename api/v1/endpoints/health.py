@@ -7,7 +7,7 @@ from core.db import check_db_status
 from core.dependency import get_db, get_skin_service
 from core.config import settings
 from services.skin_service import SkinService
-from utils.logger import logger
+from core.logger import logger
 
 router = APIRouter()
 

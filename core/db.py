@@ -2,7 +2,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from core.config import settings
 from models.db_models import Base
-from utils.logger import logger
+from core.logger import logger
 
 # Create the SQLAlchemy engine
 engine = create_engine(settings.DATABASE_URL, connect_args={"check_same_thread": False})

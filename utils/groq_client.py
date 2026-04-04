@@ -1,6 +1,6 @@
 from groq import Groq
 from core.config import settings
-from utils.logger import logger
+from core.logger import logger
 
 
 class GroqClient:

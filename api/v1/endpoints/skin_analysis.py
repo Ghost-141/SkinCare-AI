@@ -17,7 +17,8 @@ from services.skin_service import SkinService
 from services.advisor_service import AdvisorService
 from models.db_models import SkinAnalysisLog
 from core.config import settings
-from utils.logger import logger
+from core.logger import logger
+from utils.file_validator import validate_upload
 from anyio import to_thread
 import shutil
 import os
@@ -66,10 +67,14 @@ async def analyze_skin(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     skin_service: SkinService = Depends(get_skin_service),
-    advisor_service: AdvisorService = Depends(get_advisor_service)
+    advisor_service: AdvisorService = Depends(get_advisor_service),
 ):
     """Single API for image classification and streaming LLM advice."""
     try:
+
+        # Validate File
+        content = await validate_upload(file)
+
         # 1. Save Image (Non-blocking I/O)
         file_extension = os.path.splitext(file.filename)[1]
         file_name = f"{uuid.uuid4()}{file_extension}"
@@ -77,7 +82,8 @@ async def analyze_skin(
 
         def save_file():
             with open(file_path, "wb") as buffer:
-                shutil.copyfileobj(file.file, buffer)
+                buffer.write(content)
+                # shutil.copyfileobj(file.file, buffer)
 
         await to_thread.run_sync(save_file)
 
@@ -85,6 +91,7 @@ async def analyze_skin(
         prediction, confidence = skin_service.predict(file_path)
 
         async def combined_generator():
+
             full_recommendation = []
 
             # 3. First chunk: Metadata as JSON
@@ -116,10 +123,13 @@ async def analyze_skin(
                 file_path,
                 prediction,
                 confidence,
-                final_text
+                final_text,
             )
 
         return StreamingResponse(combined_generator(), media_type="text/event-stream")
+
+    except HTTPException:
+        raise
 
     except Exception as e:
         logger.error(f"Single API Error: {str(e)}")
