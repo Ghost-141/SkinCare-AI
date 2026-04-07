@@ -10,20 +10,22 @@ class Settings(BaseSettings):
     ENV_MODE: str = "dev"  # dev, staging, prod
 
     # LLM Settings
-    LLM_PROVIDER: str = "Groq"  # Groq or Ollama
+    LLM_PROVIDER: str = "Groq"  # Groq, Ollama, or Gemini
     GROQ_API_KEY: str = ""
     GROQ_MODEL: str = "llama-3.1-8b-instant"
     OLLAMA_BASE_URL: str = "http://localhost:11434"
-    OLLAMA_MODEL: str = "llama3.2:3b"
+    OLLAMA_MODEL: str = "qwen2.5-vl:3b"
     OLLAMA_KEEP_ALIVE: int = -1
+    GOOGLE_API_KEY: str = ""
+    GEMINI_MODEL: str = "gemini-1.5-flash"
 
     # Model & Storage Settings
-    MODEL_PATH: str = "models/weights/resnet_v1.pt"
-    DATABASE_URL: str = "sqlite:///./data/db/skin_app.db"
+    MODEL_PATH: str = "models/weights/EfficientNet_B0.pt"
+    DATABASE_URL: str = "sqlite+aiosqlite:///./data/db/skin_app.db"
     UPLOAD_DIR: str = "data/uploads"
 
     # File Upload Restrictions
-    MAX_FILE_SIZE: int = 2 * 1024 * 1024  # 10MB
+    MAX_FILE_SIZE: int = 5 * 1024 * 1024  #  5MB
     ALLOWED_EXTENSIONS: str = ".jpg,.jpeg,.png"
     ALLOWED_IMAGE_TYPES: str = "jpeg,png"  # PIL format names
 

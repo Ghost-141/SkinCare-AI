@@ -16,8 +16,9 @@ from contextlib import asynccontextmanager
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Ensure database directory exists
-    if settings.DATABASE_URL.startswith("sqlite:///"):
-        db_path = settings.DATABASE_URL.replace("sqlite:///", "")
+    if "sqlite" in settings.DATABASE_URL:
+        # Handle both sqlite:/// and sqlite+aiosqlite:///
+        db_path = settings.DATABASE_URL.split(":///")[-1]
         db_dir = os.path.dirname(db_path)
         if db_dir:
             os.makedirs(db_dir, exist_ok=True)
@@ -34,7 +35,7 @@ async def lifespan(app: FastAPI):
         )
 
     # Initialize tables
-    create_db_and_tables()
+    await create_db_and_tables()
     
     logger.info("Application started")
     yield

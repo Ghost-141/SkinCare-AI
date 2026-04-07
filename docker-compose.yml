@@ -10,7 +10,8 @@ services:
     environment:
       # Use host.docker.internal to reach Ollama running on your host machine
       - OLLAMA_BASE_URL=http://host.docker.internal:11434
-      - LLM_PROVIDER=Ollama # Or Ollama
+      - LLM_PROVIDER=Ollama # Options: Gemini, Groq, Ollama
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
       - GROQ_API_KEY=${GROQ_API_KEY}
       - ENV_MODE=prod
     volumes:

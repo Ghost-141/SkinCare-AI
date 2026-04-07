@@ -1,42 +1,49 @@
-from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from sqlalchemy import text
 from core.config import settings
 from models.db_models import Base
 from core.logger import logger
 
-# Create the SQLAlchemy engine
-engine = create_engine(settings.DATABASE_URL, connect_args={"check_same_thread": False})
+# Create the asynchronous SQLAlchemy engine
+engine = create_async_engine(settings.DATABASE_URL)
 
-# Create a session factory
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# Create an async session factory
+AsyncSessionLocal = async_sessionmaker(
+    bind=engine,
+    class_=AsyncSession,
+    autocommit=False,
+    autoflush=False,
+    expire_on_commit=False,
+)
 
-def create_db_and_tables():
-    """Load and initialize database tables."""
+async def create_db_and_tables():
+    """Load and initialize database tables asynchronously."""
     try:
-        Base.metadata.create_all(bind=engine)
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
         logger.info("Database tables initialized successfully.")
     except Exception as e:
         logger.error(f"Error initializing database: {str(e)}")
         raise
 
-def check_db_status():
-    """Check the database connection status."""
+async def check_db_status():
+    """Check the database connection status asynchronously."""
     try:
-        with engine.connect() as connection:
-            connection.execute(text("SELECT 1"))
+        async with engine.connect() as connection:
+            await connection.execute(text("SELECT 1"))
         return "online"
     except Exception as e:
         logger.error(f"Database status check failed: {str(e)}")
         return f"offline: {str(e)}"
 
-def commit_to_db(db_session, model_instance):
-    """Commit an instance to the database safely."""
+async def commit_to_db(db_session: AsyncSession, model_instance):
+    """Commit an instance to the database safely using AsyncSession."""
     try:
         db_session.add(model_instance)
-        db_session.commit()
-        db_session.refresh(model_instance)
+        await db_session.commit()
+        await db_session.refresh(model_instance)
         return model_instance
     except Exception as e:
-        db_session.rollback()
+        await db_session.rollback()
         logger.error(f"Database commit error: {str(e)}")
         raise

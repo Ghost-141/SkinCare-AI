@@ -1,15 +1,14 @@
 # 🩺 Skin Disease AI Assistant
 
-A production-grade medical AI system for skin disease classification and LLM-powered clinical advice. This project combines Deep Learning (PyTorch) for image analysis with Large Language Models (Groq/Ollama) to provide structured medical recommendations.
+A production-grade medical AI system for skin disease classification and LLM-powered clinical advice. This project combines Deep Learning (PyTorch) for disease classification with Large Language Models (Groq/Ollama) to provide structured medical recommendations.
 
----
 
 ## 🚀 Features
 
-- **Disease Detection:** Image classification using ResNet-50 / EfficientNet-B0.
+- **Disease Detection:** Image classification using ResNet-50 / EfficientNet-B0 / Yolov8.
 - **LLM Integration:** Real-time advice via Groq (Cloud) or Ollama (Local) LLM.
 - **Patient Management:** Track history by Patient ID and Name.
-- **Reports:** Automated PDF report generation with patient details and AI recommendations.
+- **Reports:** Automated PDF report generation with patient details, AI recommendations and download full report.
 - **Production Ready:** Async I/O, Environment-based configuration, and Dockerized deployment.
 
 ---
@@ -54,14 +53,14 @@ A production-grade medical AI system for skin disease classification and LLM-pow
    ```
 
 ### 3. Environment Configuration (.env)
-Create a `.env` file in the root directory. You can use `.env.dev` as a template:
+Create a `.env.dev` file in the root directory. Paste the followings in that file:
 ```ini
-APP_NAME=SkinDiseaseAI
+APP_NAME=SkinCare_AI
 ENV_MODE=dev
 
 # LLM Provider: Groq or Ollama
 LLM_PROVIDER=Groq
-GROQ_API_KEY=your_gsk_key_here
+GROQ_API_KEY=pase_your_groq_api-key_here
 GROQ_MODEL=llama-3.1-8b-instant
 
 # Ollama Settings (if using local)
@@ -69,11 +68,12 @@ OLLAMA_BASE_URL=http://localhost:11434
 OLLAMA_MODEL=llama3.2:3b
 
 # Storage
-DATABASE_URL=sqlite:///./data/db/skin_app.db
+DATABASE_URL=sqlite+aiosqlite:///./data/db/skin_app.db
 UPLOAD_DIR=data/uploads
+
 ```
 
-### 4. LLM Setup 
+### 4. LLM Setup (Local/Cloud)
 
 - ### Ollama
 
@@ -86,6 +86,13 @@ UPLOAD_DIR=data/uploads
       ```
   3. **Configure Environment:** Ensure your `.env` file has `LLM_PROVIDER=Ollama` and `OLLAMA_MODEL=llama3.2:3b`.
   4. **CORS/Docker Note:** If running the backend in Docker while Ollama is on the host, the `OLLAMA_BASE_URL` is automatically handled by the `docker-compose.yml` via `host.docker.internal`.
+
+- ### Gemini LLM
+  If you prefer to use models from google cloud use following steps:  
+  1. Use your google account and head to google developer api.
+  2. Create an API Key from the `API Keys` tab.
+  3. Put the api key in the `.env` at `GOOGLE_API_KEY` and ensure the `LLM Provider=Gemini`.
+
 
 - ### Groq Cloud LLM
   If you prefer to use models from cloud provides your can use groq.  
@@ -139,7 +146,7 @@ Once the backend is running, you can access the interactive documentation:
 Analyzes an uploaded skin image and provides streaming LLM advice.
 
 **Request:** `multipart/form-data`
-- `user_id` (string): Unique Patient ID.
+- `user_id` (integer): Unique Patient ID.
 - `patient_name` (string): Full name of the patient.
 - `age` (integer): Patient age.
 - `file` (binary): Image file (JPG, PNG).
@@ -148,10 +155,10 @@ Analyzes an uploaded skin image and provides streaming LLM advice.
 The stream starts with a JSON metadata block followed by LLM tokens:
 ```json
 {
-  "user_id": "PATIENT-123",
+  "user_id": "123",
   "patient_name": "John Doe",
   "age": 25,
-  "prediction": "Acne",
+  "prediction": "Eczema",
   "accuracy": 0.95,
   "created_at": "2026-04-02T12:00:00Z"
 }
@@ -165,13 +172,13 @@ Retrieves all past scan records for a specific patient.
 ```json
   {
     "id": 1,
-    "user_id": "PATIENT-123",
+    "user_id": "123",
     "patient_name": "Imtiaz Ahammed",
     "age": 25,
     "image_path": "data/uploads/01.jpg",
-    "prediction": "Acne",
+    "prediction": "Eczema",
     "accuracy": 0.70,
-    "llm_recommendation": "The diagnosis is acne...",
+    "llm_recommendation": "The diagnosis is Eczema...",
     "llm_provider": "Ollama",
     "created_at": "2026-04-02T12:00:00Z"
   }
@@ -217,9 +224,8 @@ Lists all available pre-trained model weights in the system.
 ```
 
 #### `POST /api/v1/models/select`
-Switches between the available pre-trained skin-disease model.
-**Query Parameter:**   
-`model_name=resnet.pt`
+Switches between the available pre-trained skin-disease model.  
+**Query Parameter:**   `model_name=resnet.pt`  
 **Response:**
 ```json
 {
@@ -234,6 +240,7 @@ The model was mainly trained on kaggle for better gpu support and longer trainin
 Currently, it supports training the following models:
 1. `Resnet50`
 2. `EfficientNet_b0`
+3. `Yolov8n_cls`
 
 ### Training a new model:
 ```bash
@@ -245,47 +252,47 @@ python scripts/train.py --data_path "C:/path/to/dataset" --model_type resnet --e
 
 ## 📁 Directory Structure
 ```markdown
-├── app/             
-│   ├── api/         
-│   │   └── v1/      
-│   ├── core/        
-│   │   ├── config.py            
-│   │   └── dependency.py       
-│   ├── models/      
-│   │   ├── db_models.py       
-│   │   ├── schemas.py         
-│   │   └── weights/            # .pt Model weight Files
-│   ├── services/    
-│   │   ├── interface/          # Abstract Base Classes (Interfaces)
-│   │   ├── skin_service.py     # CNN Inference (TorchScript)
-│   │   └── advisor_service.py  # LLM Logic (Groq/Ollama)
-│   ├── system_prompts/         # Prompt templates
-│   │   └── prompt_v1.py         
-│   └── utils/       # Helper Modules & External Clients
-│       ├── groq_client.py      # Groq Cloud API Wrapper
-│       ├── ollama_client.py    # Ollama LLM Wrapper
-│       ├── logger.py           # Logging Configuration
-│       └── ui_helpers.py       # Streamlit UI Utilities
-├── data/          
-│   ├── db/                     # Local Database Files
-│   ├── uploads/                # Temporary Storage for User Images
-│   ├── class_mapping.json   # CNN 
-Class Index -> Disease Name
-│
-├── scripts/         # Training Scripts
-│   └── train.py                # Model Training Script
-├── tests/           # Automated Testing
-│   └── test_api.py             # Endpoint Integration Tests
-├── logs/            # Application Runtime Logs
-│   └── app.log
-├── ui.py            # Streamlit Frontend
-├── main.py          # FastAPI Entry Point
-├── Dockerfile       # CPU Deployment
-├── Dockerfile.gpu              
-├── docker-compose.yml          
-├── pyproject.toml              
-├── README.md                   # Documentation
-└── LICENSE                     # Project License
+├── api/             
+│   └── v1/        # API endpoints
+├── core/          # Central Config
+│   ├── config.py       
+│   ├── logger.py  # App logger
+│   ├── db.py      # Db engine 
+│   └── dependency.py   
+├── models/  # Data Structures & Weights
+│   ├── db_models.py   
+│   ├── schemas.py # Pydantic models 
+│   └── weights/   # .pt files 
+├── services/           
+│   ├── interface/ # AbstractClasses
+│   ├── skin_service.py 
+│   └── advisor_service.py
+├── system_prompts/    
+│   └── prompt_v1.py    
+├── utils/            
+│   ├── groq_client.py      
+│   ├── ollama_client.py   
+│   ├── gemini_client.py     
+│   ├── file_validator.py
+│   ├── visualization.py 
+│   └── ui_helpers.py    
+├── data/                   
+│   ├── db/   # SQLite file 
+│   ├── uploads/       
+│   └── class_mapping.json 
+├── scripts/                
+│   └── train.py            # YOLO/CNN Training script
+├── tests/            
+│   └── test_api.py         # Pytest for API endpoints
+├── logs/                  
+│   └── app_date.log
+├── ui.py        
+├── main.py      
+├── Dockerfile          
+├── docker-compose.yml     
+├── pyproject.toml   
+├── README.md          
+└── LICENSE
 ```
 
 

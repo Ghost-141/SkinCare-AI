@@ -2,18 +2,20 @@ from fastapi import APIRouter, Depends, HTTPException
 import requests
 import shutil
 import os
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, func
 from core.db import check_db_status
 from core.dependency import get_db, get_skin_service
 from core.config import settings
 from services.skin_service import SkinService
+from models.db_models import SkinAnalysisLog
 from core.logger import logger
 
 router = APIRouter()
 
 @router.get("/health")
 async def health_check(
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     skin_service: SkinService = Depends(get_skin_service)
 ):
     health_status = {
@@ -22,7 +24,7 @@ async def health_check(
     }
 
     # 1. Check Database
-    status = check_db_status()
+    status = await check_db_status()
     health_status["services"]["database"] = status
     if "offline" in status:
         health_status["status"] = "unhealthy"
@@ -93,6 +95,32 @@ async def health_check(
                 except Exception as e:
                     health_status["services"]["llm"] = {"provider": "Groq", "status": f"unreachable: {str(e)}"}
                     health_status["status"] = "degraded"
+        elif llm_provider == "gemini":
+            if not settings.GOOGLE_API_KEY or "your_google_api_key" in settings.GOOGLE_API_KEY:
+                health_status["services"]["llm"] = {"provider": "Gemini", "status": "missing_key"}
+                health_status["status"] = "degraded"
+            else:
+                # Actual connectivity check for Gemini
+                try:
+                    # Using the standard Google AI endpoint for a model check
+                    resp = requests.get(
+                        f"https://generativelanguage.googleapis.com/v1beta/models/{settings.GEMINI_MODEL}?key={settings.GOOGLE_API_KEY}",
+                        timeout=5
+                    )
+                    if resp.status_code == 200:
+                        health_status["services"]["llm"] = {
+                            "provider": "Gemini",
+                            "status": settings.GEMINI_MODEL,  # Show model name as status
+                        }
+                    else:
+                        health_status["services"]["llm"] = {
+                            "provider": "Gemini",
+                            "status": f"api_error: {resp.status_code}"
+                        }
+                        health_status["status"] = "degraded"
+                except Exception as e:
+                    health_status["services"]["llm"] = {"provider": "Gemini", "status": f"unreachable: {str(e)}"}
+                    health_status["status"] = "degraded"
         else:
             # Add a fallback for unknown providers
             health_status["services"]["llm"] = {"provider": settings.LLM_PROVIDER, "status": "unknown_provider"}
@@ -102,6 +130,20 @@ async def health_check(
         health_status["services"]["llm"] = {"provider": settings.LLM_PROVIDER, "status": f"error: {str(e)}"}
 
     return health_status
+
+@router.get("/stats")
+async def get_stats(db: AsyncSession = Depends(get_db)):
+    """Fetch disease statistics from the database asynchronously."""
+    try:
+        result = await db.execute(
+            select(SkinAnalysisLog.prediction, func.count(SkinAnalysisLog.id))
+            .group_by(SkinAnalysisLog.prediction)
+        )
+        rows = result.all()
+        return {item[0]: item[1] for item in rows}
+    except Exception as e:
+        logger.error(f"Error fetching stats: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to fetch statistics")
 
 @router.get("/models")
 async def list_models(skin_service: SkinService = Depends(get_skin_service)):

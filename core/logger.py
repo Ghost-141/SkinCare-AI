@@ -14,10 +14,9 @@ def _get_log_dir() -> Path:
         return fallback_path
 
 
-# Remove default handler
 logger.remove()
 
-# Console: Only show WARNING and above (less noise)
+# Only show WARNING and above (less noise)
 logger.add(
     sys.stdout,
     format="<green>{time:HH:mm:ss}</green> | <level>{level: <8}</level> | <level>{message}</level>",
@@ -25,7 +24,7 @@ logger.add(
     colorize=True,
 )
 
-# File: Log everything with details
+# Log everything with details
 log_dir = _get_log_dir()
 logger.add(
     log_dir / "app_{time:YYYY-MM-DD}.log",

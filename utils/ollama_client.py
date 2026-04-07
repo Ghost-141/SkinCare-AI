@@ -10,8 +10,7 @@ class OllamaClient:
         self.model = settings.OLLAMA_MODEL
 
     async def generate_stream(self, prompt: str, system_prompt: str = "") -> AsyncGenerator[str, None]:
-        """Stream tokens from Ollama API."""
-        full_prompt = f"{system_prompt}\n\nUser: {prompt}\nAssistant:"
+        """Stream tokens from Ollama API using /api/generate."""
         try:
             async with httpx.AsyncClient() as client:
                 async with client.stream(
@@ -19,7 +18,8 @@ class OllamaClient:
                     f"{self.base_url}/api/generate",
                     json={
                         "model": self.model,
-                        "prompt": full_prompt,
+                        "prompt": prompt,
+                        "system": system_prompt,
                         "stream": True,
                         "keep_alive": settings.OLLAMA_KEEP_ALIVE
                     },
@@ -36,18 +36,18 @@ class OllamaClient:
                             break
         except Exception as e:
             logger.error(f"Ollama Stream Error: {str(e)}")
-            yield "Error: Unable to stream advice from Ollama."
+            yield f"Error: Unable to stream advice from Ollama ({str(e)})."
 
     async def generate(self, prompt: str, system_prompt: str = "") -> str:
-        """Standard non-streaming generation."""
-        full_prompt = f"{system_prompt}\n\nUser: {prompt}\nAssistant:"
+        """Standard non-streaming generation using /api/generate."""
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.post(
                     f"{self.base_url}/api/generate",
                     json={
                         "model": self.model,
-                        "prompt": full_prompt,
+                        "prompt": prompt,
+                        "system": system_prompt,
                         "stream": False,
                         "keep_alive": settings.OLLAMA_KEEP_ALIVE
                     },
@@ -57,4 +57,4 @@ class OllamaClient:
                 return response.json().get("response", "")
         except Exception as e:
             logger.error(f"Ollama Async Error: {str(e)}")
-            return "Error: Unable to get advice from Ollama."
+            return f"Error: Unable to get advice from Ollama ({str(e)})."

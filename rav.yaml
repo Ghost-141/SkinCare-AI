@@ -2,19 +2,23 @@ scripts:
   # Setup & Installation
   install: uv sync
   
-  # Running the Application
+  # Running the Application Locally
   dev: uv run uvicorn main:app --reload
   ui: uv run streamlit run ui.py
+  app: uv run python -m uvicorn main:app --host 0.0.0.0 --port 8000 & uv run streamlit run ui.py --server.port 8501
   
   # Testing & Quality
-  test: uv run pytest
-  test-v: uv run pytest -v
-  
-  # Maintenance
-  clean: 
-    - powershell -Command "Remove-Item -Path logs/*.log -ErrorAction SilentlyContinue"
-    - powershell -Command "Remove-Item -Path data/uploads/*.jpg -ErrorAction SilentlyContinue"
+  test: uv run pytest tests/test_api.py
+  test-v: uv run pytest -v tests/test_api.py
   
   # Docker
-  docker-build: docker build -t skin-disease-app .
-  docker-run: docker run -p 8000:8000 skin-disease-app
+  # Build the container image
+  docker-build: docker build -t skin-disease-ai .
+  
+  # Run the full stack (API on 8000, UI on 8501)
+  docker-run: docker run -p 8000:8000 -p 8501:8501 skin-disease-ai
+  
+  # Orchard Orchestration
+  docker-compose: docker-compose up --build -d
+  docker-stop: docker-compose down
+  docker-logs: docker-compose logs -f

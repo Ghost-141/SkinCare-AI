@@ -18,6 +18,8 @@ dependencies = [
     "pytest>=9.0.2",
     "python-dotenv>=1.2.2",
     "python-multipart>=0.0.22",
+    "grad-cam>=1.5.4",
+    "ultralytics>=8.1.0",
     "rav>=0.4.3",
     "requests>=2.33.1",
     "sqlalchemy>=2.0.48",
@@ -25,6 +27,8 @@ dependencies = [
     "torch>=2.11.0",
     "torchvision>=0.26.0",
     "uvicorn>=0.42.0",
+    "aiosqlite>=0.22.1",
+    "google-genai>=0.8.0",
 ]
 
 [tool.uv.sources]
