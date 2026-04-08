@@ -1,6 +1,6 @@
 # 🩺 Skin Disease AI Assistant
 
-A production-grade medical AI system for skin disease classification and LLM-powered clinical advice. This project combines Deep Learning (PyTorch) for disease classification with Large Language Models (Groq/Ollama) to provide structured medical recommendations.
+A production-grade medical AI system for skin disease classification and LLM-powered clinical advice. This project combines Deep Learning (PyTorch) for disease classification with Large Language Models (Gemini/Groq/Ollama) to provide structured medical recommendations.
 
 
 ## 🚀 Features
@@ -58,7 +58,7 @@ Create a `.env.dev` file in the root directory. Paste the followings in that fil
 APP_NAME=SkinCare_AI
 ENV_MODE=dev
 
-# LLM Provider: Groq or Ollama
+# LLM Provider: Groq/Ollama/Gemini
 LLM_PROVIDER=Groq
 GROQ_API_KEY=pase_your_groq_api-key_here
 GROQ_MODEL=llama-3.1-8b-instant
@@ -82,23 +82,23 @@ UPLOAD_DIR=data/uploads
   1. **Install Ollama:** Download and install from [ollama.ai](https://ollama.ai/).
   2. **Pull the required model:**
       ```bash
-      ollama pull llama3.2:3b
+      ollama pull qwen3-vl:2b
       ```
-  3. **Configure Environment:** Ensure your `.env` file has `LLM_PROVIDER=Ollama` and `OLLAMA_MODEL=llama3.2:3b`.
+  3. **Configure Environment:** Ensure your `.env.dev` file has `LLM_PROVIDER=Ollama` and `OLLAMA_MODEL=qwen3-vl:2b`.
   4. **CORS/Docker Note:** If running the backend in Docker while Ollama is on the host, the `OLLAMA_BASE_URL` is automatically handled by the `docker-compose.yml` via `host.docker.internal`.
 
 - ### Gemini LLM
   If you prefer to use models from google cloud use following steps:  
   1. Use your google account and head to google developer api.
   2. Create an API Key from the `API Keys` tab.
-  3. Put the api key in the `.env` at `GOOGLE_API_KEY` and ensure the `LLM Provider=Gemini`.
+  3. Put the api key in the `.env.dev` at `GOOGLE_API_KEY` and ensure the `LLM Provider=Gemini`.
 
 
 - ### Groq Cloud LLM
   If you prefer to use models from cloud provides your can use groq.  
   1. Create an account at [Groq](https://console.groq.com/keys)
   2. Create an API Key from the `API Keys` tab.
-  3. Put the api key in the `.env` at `GROQ_API_KEY` and ensure the `LLM Provider=Groq`.
+  3. Put the api key in the `.env.dev` at `GROQ_API_KEY` and ensure the `LLM Provider=Groq`.
 
 
 ## Run the Project
@@ -112,7 +112,7 @@ UPLOAD_DIR=data/uploads
   rav run ui
   ```
 Access the backend: `http://127.0.0.1:8000/docs`
-Access the frontend: 
+Access the frontend: `http://localhost:8501/`
 
 ## 🐳 Docker Deployment
 
@@ -120,7 +120,7 @@ The project is configured for easy deployment using Docker Compose.
 
 ### CPU Deployment (Default)
 ```bash
-docker-compose up --build -d
+rav run docker-compose
 ```
 
 ### GPU Deployment

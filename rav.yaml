@@ -11,7 +11,6 @@ scripts:
   test: uv run pytest tests/test_api.py
   test-v: uv run pytest -v tests/test_api.py
   
-  # Docker
   # Build the container image
   docker-build: docker build -t skin-disease-ai .
   
