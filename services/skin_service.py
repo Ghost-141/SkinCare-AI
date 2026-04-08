@@ -85,7 +85,7 @@ class SkinService(ISkinAnalysis):
             return True
         return False
 
-    def predict(self, image_path: str) -> tuple[str, float]:
+    def predict(self, image_path: str) -> tuple[str, float, int]:
         if not image_path or not os.path.exists(image_path):
             raise ValueError(f"Image path does not exist: {image_path}")
 
@@ -113,7 +113,7 @@ class SkinService(ISkinAnalysis):
 
                     prediction = re.sub(r"^\d+\.\s*", "", raw_name)  # Strip prefixes
 
-                return prediction, confidence
+                return prediction, confidence, index
 
             image = Image.open(image_path).convert("RGB")
             image = self.transform(image).unsqueeze(0).to(self.device)
@@ -123,8 +123,9 @@ class SkinService(ISkinAnalysis):
                 probabilities = torch.nn.functional.softmax(outputs[0], dim=0)
                 confidence, index = torch.max(probabilities, 0)
 
-            prediction = self.classes[index.item()]
-            return prediction, confidence.item()
+            index_val = index.item()
+            prediction = self.classes[index_val]
+            return prediction, confidence.item(), index_val
         except Exception as e:
             logger.error(f"Prediction Error for {image_path}: {str(e)}")
             raise RuntimeError(f"Model prediction failed: {str(e)}") from e

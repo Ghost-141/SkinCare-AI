@@ -82,7 +82,7 @@ async def analyze_skin(
 
         # 2. Run Classification
         try:
-            prediction, confidence = await to_thread.run_sync(
+            prediction, confidence, index = await to_thread.run_sync(
                 skin_service.predict, file_path
             )
         except ValueError as e:
@@ -105,7 +105,7 @@ async def analyze_skin(
         heatmap_path = os.path.join(settings.UPLOAD_DIR, heatmap_name)
         model_path = getattr(skin_service, "current_model_path", settings.MODEL_PATH)
         await to_thread.run_sync(
-            create_and_save_heatmap, model_path, file_path, heatmap_path
+            create_and_save_heatmap, model_path, file_path, heatmap_path, index
         )
 
         # 3. Create Initial DB Log

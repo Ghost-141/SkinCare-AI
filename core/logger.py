@@ -16,7 +16,7 @@ def _get_log_dir() -> Path:
 
 logger.remove()
 
-# Only show WARNING and above (less noise)
+# Only show WARNING and above 
 logger.add(
     sys.stdout,
     format="<green>{time:HH:mm:ss}</green> | <level>{level: <8}</level> | <level>{message}</level>",

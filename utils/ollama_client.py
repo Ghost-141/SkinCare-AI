@@ -12,7 +12,9 @@ class OllamaClient:
     async def generate_stream(self, prompt: str, system_prompt: str = "") -> AsyncGenerator[str, None]:
         """Stream tokens from Ollama API using /api/generate."""
         try:
-            async with httpx.AsyncClient() as client:
+            # Using a longer timeout for the initial connection and None for streaming
+            timeout = httpx.Timeout(10.0, read=None) 
+            async with httpx.AsyncClient(timeout=timeout) as client:
                 async with client.stream(
                     "POST",
                     f"{self.base_url}/api/generate",
@@ -22,21 +24,29 @@ class OllamaClient:
                         "system": system_prompt,
                         "stream": True,
                         "keep_alive": settings.OLLAMA_KEEP_ALIVE
-                    },
-                    timeout=60.0
+                    }
                 ) as response:
+                    if response.status_code != 200:
+                        error_text = await response.aread()
+                        logger.error(f"Ollama Error: {response.status_code} - {error_text.decode()}")
+                        yield f"Error: Ollama returned status {response.status_code}"
+                        return
+
                     async for line in response.aiter_lines():
                         if not line:
                             continue
-                        body = json.loads(line)
-                        token = body.get("response", "")
-                        if token:
-                            yield token
-                        if body.get("done", False):
-                            break
+                        try:
+                            body = json.loads(line)
+                            token = body.get("response", "")
+                            if token:
+                                yield token
+                            if body.get("done", False):
+                                break
+                        except json.JSONDecodeError:
+                            continue
         except Exception as e:
             logger.error(f"Ollama Stream Error: {str(e)}")
-            yield f"Error: Unable to stream advice from Ollama ({str(e)})."
+            yield f"Error: Unable to stream advice from Ollama."
 
     async def generate(self, prompt: str, system_prompt: str = "") -> str:
         """Standard non-streaming generation using /api/generate."""

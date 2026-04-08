@@ -33,8 +33,17 @@ def get_model_architecture(model_path: str, num_classes: int = 10, device: str =
         yolo_model = YOLO(model_path)
         # Extract the underlying PyTorch model
         model = yolo_model.model
+        
+        # Ensure gradients are enabled for Grad-CAM
+        for param in model.parameters():
+            param.requires_grad = True
+            
         wrapped_model = YOLOClsWrapper(model)
-        target_layers = [model.model[8]]
+        # Target the final convolution layer before pooling in the classification head
+        if hasattr(model.model[9], "conv"):
+            target_layers = [model.model[9].conv.conv]
+        else:
+            target_layers = [model.model[8]]
 
         wrapped_model.to(device)
         wrapped_model.eval()
@@ -95,7 +104,7 @@ def generate_gradcam_plusplus(model, target_layers, input_tensor, target_class=N
         return None
 
 
-def create_and_save_heatmap(model_path: str, image_path: str, output_path: str):
+def create_and_save_heatmap(model_path: str, image_path: str, output_path: str, target_class: int = None):
     """Full pipeline using grad-cam library."""
     try:
         # Detect device
@@ -122,7 +131,7 @@ def create_and_save_heatmap(model_path: str, image_path: str, output_path: str):
         )
 
         # Generate CAM
-        grayscale_cam = generate_gradcam_plusplus(model, target_layers, input_tensor)
+        grayscale_cam = generate_gradcam_plusplus(model, target_layers, input_tensor, target_class=target_class)
 
         if grayscale_cam is not None:
             cam_pil = Image.fromarray((grayscale_cam * 255).astype(np.uint8))

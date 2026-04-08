@@ -3,7 +3,7 @@ import torch
 
 class ISkinAnalysis(ABC):
     @abstractmethod
-    def predict(self, image_path: str) -> tuple[str, float]:
+    def predict(self, image_path: str) -> tuple[str, float, int]:
         pass
 
     @abstractmethod

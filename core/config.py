@@ -10,14 +10,14 @@ class Settings(BaseSettings):
     ENV_MODE: str = "dev"  # dev, staging, prod
 
     # LLM Settings
-    LLM_PROVIDER: str = "Groq"  # Groq, Ollama, or Gemini
+    LLM_PROVIDER: str = "Gemini"  # Groq, Ollama, or Gemini
     GROQ_API_KEY: str = ""
     GROQ_MODEL: str = "llama-3.1-8b-instant"
     OLLAMA_BASE_URL: str = "http://localhost:11434"
-    OLLAMA_MODEL: str = "qwen2.5-vl:3b"
+    OLLAMA_MODEL: str = "qwen3-vl:2b"
     OLLAMA_KEEP_ALIVE: int = -1
     GOOGLE_API_KEY: str = ""
-    GEMINI_MODEL: str = "gemini-1.5-flash"
+    GEMINI_MODEL: str = "gemini-2.5-flash"
 
     # Model & Storage Settings
     MODEL_PATH: str = "models/weights/EfficientNet_B0.pt"
@@ -33,6 +33,7 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         extra="ignore",
+        env_prefix="",  # Default is no prefix
     )
 
 

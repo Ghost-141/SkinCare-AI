@@ -183,22 +183,27 @@ def render_main_content():
                             )
 
                             if response.status_code == 200:
-                                # 1. Capture the Metadata chunk
+                                # 1. Capture the Metadata chunk with a buffer to handle split chunks
                                 metadata_json = ""
                                 remaining_chunk = ""
+                                buffer = ""
+                                delimiter = "||METADATA_END||"
+                                
                                 stream_content = response.iter_content(
-                                    chunk_size=None, decode_unicode=True
+                                    chunk_size=1, decode_unicode=True # Read character by character until delimiter
                                 )
 
-                                # Read the first chunk which contains our metadata
-                                for chunk in stream_content:
-                                    if "||METADATA_END||" in chunk:
-                                        parts = chunk.split("||METADATA_END||")
+                                for char in stream_content:
+                                    buffer += char
+                                    if delimiter in buffer:
+                                        parts = buffer.split(delimiter)
                                         metadata_json = parts[0]
-                                        remaining_chunk = (
-                                            parts[1] if len(parts) > 1 else ""
-                                        )
+                                        remaining_chunk = parts[1] if len(parts) > 1 else ""
                                         break
+
+                                if not metadata_json:
+                                    st.error("Failed to parse metadata from stream.")
+                                    return
 
                                 result = json.loads(metadata_json)
                                 st.subheader(

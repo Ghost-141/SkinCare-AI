@@ -43,7 +43,7 @@ async def test_analyze_skin_endpoint(async_client):
 
     # Form data required by the updated API
     payload = {
-        "user_id": "TEST-PATIENT-001",
+        "user_id": "1011",
         "patient_name": "Test User",
         "age": "30" # Form data values are strings
     }
@@ -92,7 +92,7 @@ async def test_analyze_skin_invalid_file(async_client):
 @pytest.mark.anyio
 async def test_history_endpoint(async_client):
     """Test retrieving history for a patient."""
-    user_id = "TEST-PATIENT-001"
+    user_id = "1001"
     response = await async_client.get(f"/api/v1/history/{user_id}")
     assert response.status_code == 200
     history = response.json()
