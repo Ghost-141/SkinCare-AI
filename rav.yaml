@@ -18,6 +18,6 @@ scripts:
   docker-run: docker run -p 8000:8000 -p 8501:8501 skin-disease-ai
   
   # Orchard Orchestration
-  docker-compose: docker-compose up --build -d
-  docker-stop: docker-compose down
-  docker-logs: docker-compose logs -f
+  docker-compose: docker compose up --build -d
+  docker-stop: docker compose down
+  docker-logs: docker compose logs -f
