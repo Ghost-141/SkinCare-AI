@@ -57,15 +57,19 @@ Create a `.env.dev` file in the root directory. Paste the followings in that fil
 ```ini
 APP_NAME=SkinCare_AI
 ENV_MODE=dev
+LLM_PROVIDER=Gemini
 
-# LLM Provider: Groq/Ollama/Gemini
-LLM_PROVIDER=Groq
-GROQ_API_KEY=pase_your_groq_api-key_here
+# LLM Provider: Groq
+GROQ_API_KEY=groq_api_key_here
 GROQ_MODEL=llama-3.1-8b-instant
 
-# Ollama Settings (if using local)
+# LLM Provider: Gemini
+GOOGLE_API_KEY=gemini_api_key_here
+GEMINI_MODEL=gemini-2.5-flash
+
+# LLM Provider: Ollama
 OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=llama3.2:3b
+OLLAMA_MODEL=qwen3-vl:2b
 
 # Storage
 DATABASE_URL=sqlite+aiosqlite:///./data/db/skin_app.db
