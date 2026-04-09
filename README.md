@@ -53,6 +53,14 @@ A production-grade medical AI system for skin disease classification and LLM-pow
    ```
 
 ### 3. Environment Configuration (.env)
+
+| File        | Used By        | Recommended Contents                                |
+| :---------- | :------------- | :-------------------------------------------------- |
+| `.env`      | Docker Compose | Variables for the container (API keys, Ollama URL). |
+| `.env.dev`  | Local Python   | Local file paths, `ENV_MODE=dev`, dev API keys.     |
+| `.env.prod` | App (Internal) | Production settings (usually mirrored from `.env`). |
+
+
 Create a `.env.dev` file in the root directory. Paste the followings in that file:
 ```ini
 APP_NAME=SkinCare_AI
@@ -68,7 +76,7 @@ GOOGLE_API_KEY=gemini_api_key_here
 GEMINI_MODEL=gemini-2.5-flash
 
 # LLM Provider: Ollama
-OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_BASE_URL=http://127.0.0.1:11434
 OLLAMA_MODEL=qwen3-vl:2b
 
 # Storage
@@ -89,7 +97,11 @@ UPLOAD_DIR=data/uploads
       ollama pull qwen3-vl:2b
       ```
   3. **Configure Environment:** Ensure your `.env.dev` file has `LLM_PROVIDER=Ollama` and `OLLAMA_MODEL=qwen3-vl:2b`.
-  4. **CORS/Docker Note:** If running the backend in Docker while Ollama is on the host, the `OLLAMA_BASE_URL` is automatically handled by the `docker-compose.yml` via `host.docker.internal`.
+  
+  4. **CORS/Docker Note:** If running the backend in Docker while Ollama is on the host, set the ollama based url as following:
+  ```bash
+  OLLAMA_BASE_URL=http://your_local_machine_ip:11434
+  ```
 
 - ### Gemini LLM
   If you prefer to use models from google cloud use following steps:  
@@ -120,7 +132,10 @@ Access the frontend: `http://localhost:8501/`
 
 ## 🐳 Docker Deployment
 
-The project is configured for easy deployment using Docker Compose.
+The project is configured for easy deployment using Docker Compose. Before running the docker compose make sure to create `.env` in the root directory with all variables mentioned above. If using Ollama as LLM provides change the following:
+```bash
+OLLAMA_BASE_URL=http://your_local_machine_ip:11434
+```
 
 ### CPU Deployment (Default)
 ```bash
@@ -132,7 +147,7 @@ rav run docker-compose
 2. Ensure [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) is installed on your host.
 3. Run:
    ```bash
-   docker-compose up --build -d
+   docker compose up --build -d
    ```
 
 **Note:** The Docker setup is pre-configured to connect to **Ollama running on your host machine** via `http://host.docker.internal:11434`.
@@ -207,7 +222,7 @@ Checks the operational status of all backend dependencies.
     "llm": {
       "provider": "Ollama",
       "status": "online",
-      "model": "llama-3.2:3B"
+      "model": "qwen3-vl:2b"
     }
   }
 }
@@ -221,7 +236,8 @@ Lists all available pre-trained model weights in the system.
 {
   "available_models": [
     "resnet.pt",
-    "efficientet.pt"
+    "efficientet.pt",
+    "yolov8-cls.pt"
   ],
   "active_model": "resnet_v1.pt"
 } 
