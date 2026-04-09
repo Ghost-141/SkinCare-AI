@@ -14,12 +14,11 @@ API_BASE_URL = "http://localhost:8000/api/v1"
 
 st.set_page_config(page_title="Skin Care AI Assistant", layout="wide")
 
-# Sidebar - System Status & Model Selection
-st.sidebar.title("⚙️ System Control")
-
 
 # --- Cached API Calls ---
-@st.cache_data(ttl=2)  # Short TTL for health check to recover quickly from offline state
+@st.cache_data(
+    ttl=2
+)  # Short TTL for health check to recover quickly from offline state
 def fetch_health_status():
     try:
         resp = requests.get(f"{API_BASE_URL}/health", timeout=3)
@@ -188,7 +187,7 @@ def render_main_content():
                                 remaining_chunk = ""
                                 buffer = ""
                                 delimiter = "||METADATA_END||"
-                                
+
                                 # Use chunk_size=None for the entire stream for maximum efficiency
                                 stream_content = response.iter_content(
                                     chunk_size=1, decode_unicode=True
@@ -199,7 +198,9 @@ def render_main_content():
                                     if delimiter in buffer:
                                         parts = buffer.split(delimiter)
                                         metadata_json = parts[0]
-                                        remaining_chunk = parts[1] if len(parts) > 1 else ""
+                                        remaining_chunk = (
+                                            parts[1] if len(parts) > 1 else ""
+                                        )
                                         break
 
                                 if not metadata_json:
