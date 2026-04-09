@@ -494,4 +494,4 @@ health = fetch_health_status()
 if health:
     llm_name = health.get("services", {}).get("llm", {}).get("provider", llm_name)
 
-st.caption(f"Skin Care AI Assistant v1.0 | Backend: FastAPI | LLM: {llm_name}")
+st.caption(f"Skin Care AI Assistant v1.0 | Developed by Imtiaz Ahammed")
