@@ -146,8 +146,10 @@ async def analyze_skin(
             async for token in advisor_service.get_recommendation_stream(
                 prediction, confidence
             ):
-                full_recommendation.append(token)
-                yield token
+                if token:
+                    full_recommendation.append(token)
+                    # Add a newline after each chunk to force flush the buffer
+                    yield token + "\n"
 
             # 5. Schedule update for the full text
             final_text = "".join(full_recommendation)

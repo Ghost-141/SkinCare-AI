@@ -19,10 +19,10 @@ st.sidebar.title("⚙️ System Control")
 
 
 # --- Cached API Calls ---
-@st.cache_data(ttl=10)  # Cache for 10 seconds to reduce redundant calls
+@st.cache_data(ttl=2)  # Short TTL for health check to recover quickly from offline state
 def fetch_health_status():
     try:
-        resp = requests.get(f"{API_BASE_URL}/health")
+        resp = requests.get(f"{API_BASE_URL}/health", timeout=3)
         if resp.status_code == 200:
             return resp.json()
     except Exception:
@@ -30,10 +30,10 @@ def fetch_health_status():
     return None
 
 
-@st.cache_data(ttl=30)  # Cache models list for 30 seconds
+@st.cache_data(ttl=5)  # Shorter TTL for models list
 def fetch_available_models():
     try:
-        resp = requests.get(f"{API_BASE_URL}/models")
+        resp = requests.get(f"{API_BASE_URL}/models", timeout=3)
         if resp.status_code == 200:
             return resp.json()
     except Exception:
@@ -189,12 +189,13 @@ def render_main_content():
                                 buffer = ""
                                 delimiter = "||METADATA_END||"
                                 
+                                # Use chunk_size=None for the entire stream for maximum efficiency
                                 stream_content = response.iter_content(
-                                    chunk_size=1, decode_unicode=True # Read character by character until delimiter
+                                    chunk_size=None, decode_unicode=True
                                 )
 
-                                for char in stream_content:
-                                    buffer += char
+                                for chunk in stream_content:
+                                    buffer += chunk
                                     if delimiter in buffer:
                                         parts = buffer.split(delimiter)
                                         metadata_json = parts[0]
@@ -242,10 +243,13 @@ def render_main_content():
                                 # 2. Consume the remaining chunks as LLM tokens
                                 def stream_generator(initial_token):
                                     if initial_token:
-                                        yield initial_token
-                                    for token in stream_content:
-                                        if token:
-                                            yield token
+                                        # Strip trailing newline if present (added by backend for flushing)
+                                        yield initial_token.rstrip("\n")
+                                    # Continue using the same iterator to get the rest of the stream
+                                    for chunk in stream_content:
+                                        if chunk:
+                                            # Strip trailing newline if present
+                                            yield chunk.rstrip("\n")
 
                                 full_recommendation = st.write_stream(
                                     stream_generator(remaining_chunk)

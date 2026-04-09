@@ -18,6 +18,7 @@ RUN apt-get update \
     libgl1 \
     libglib2.0-0 \
     libgomp1 \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Set the working directory
@@ -44,10 +45,7 @@ RUN mkdir -p data/db data/uploads logs
 EXPOSE 8000
 EXPOSE 8501
 
-# Create startup script
-RUN echo "#!/bin/bash\n\
-uvicorn main:app --host 0.0.0.0 --port 8000 & \n\
-streamlit run ui.py --server.port 8501 --server.address 0.0.0.0 \n\
-" > /app/start.sh && chmod +x /app/start.sh
+# Make start.sh executable
+RUN chmod +x /app/start.sh
 
 CMD ["/app/start.sh"]
