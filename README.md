@@ -29,7 +29,7 @@ A production-grade medical AI system for skin disease classification and LLM-pow
 ### 1. Prerequisites
 - Python 3.13
 - [Ollama](https://ollama.ai/) (Optional for local LLM)
-- Groq API Key for using Cloud LLM
+- Groq / Gemini API Key for using Cloud LLM
 - Docker & Docker Compose (For containerized deployment)
 
 ### 2. Installation
@@ -127,7 +127,7 @@ UPLOAD_DIR=data/uploads
   ```bash
   rav run ui
   ```
-Access the backend: `http://127.0.0.1:8000/docs`
+Access the backend: `http://127.0.0.1:8000/docs`  
 Access the frontend: `http://localhost:8501/`
 
 ## 🐳 Docker Deployment
@@ -149,9 +149,6 @@ rav run docker-compose
    ```bash
    docker compose up --build -d
    ```
-
-**Note:** The Docker setup is pre-configured to connect to **Ollama running on your host machine** via `http://host.docker.internal:11434`.
-
 ---
 
 ## 📂 API Documentation
