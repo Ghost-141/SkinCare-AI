@@ -188,7 +188,6 @@ def render_main_content():
                                 buffer = ""
                                 delimiter = "||METADATA_END||"
 
-                                # Use chunk_size=None for the entire stream for maximum efficiency
                                 stream_content = response.iter_content(
                                     chunk_size=1, decode_unicode=True
                                 )
@@ -246,7 +245,7 @@ def render_main_content():
                                     if initial_token:
                                         # Only clean the very first chunk if it's messy
                                         yield clean_llm_markdown(initial_token)
-                                    # Continue yielding raw chunks to preserve natural spacing
+
                                     for chunk in stream_content:
                                         if chunk:
                                             yield chunk
@@ -325,7 +324,6 @@ def render_main_content():
                             else:
                                 dt_obj = raw_date
 
-                            # If naive, assume UTC (since it's stored in UTC)
                             if dt_obj.tzinfo is None:
                                 dt_obj = dt_obj.replace(tzinfo=timezone.utc)
 
@@ -487,8 +485,10 @@ render_main_content()
 
 # Footer
 st.markdown("---")
+
 # Safe footer display
 llm_name = "Ollama/Groq"
+
 # Fetch health status for footer if not cached, or use a default
 health = fetch_health_status()
 if health:
