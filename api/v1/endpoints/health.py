@@ -57,7 +57,7 @@ async def health_check(
                 )
                 health_status["services"]["llm"] = {
                     "provider": "Ollama",
-                    "status": "online" if is_pulled else "model_not_pulled",
+                    "status": settings.OLLAMA_MODEL if is_pulled else "model_not_pulled",
                     "model": settings.OLLAMA_MODEL,
                     "available_local_models": available_models
                 }
@@ -82,7 +82,7 @@ async def health_check(
                     if resp.status_code == 200:
                         health_status["services"]["llm"] = {
                             "provider": "Groq", 
-                            "status": "online",
+                            "status": settings.GROQ_MODEL,
                             "model": settings.GROQ_MODEL
                         }
                     else:

@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     LLM_PROVIDER: str = "Gemini"  # Groq, Ollama, or Gemini
     GROQ_API_KEY: str = ""
     GROQ_MODEL: str = "llama-3.1-8b-instant"
-    OLLAMA_BASE_URL: str = "http://localhost:11434"
+    OLLAMA_BASE_URL: str = "http://127.0.0.1:11434"
     OLLAMA_MODEL: str = "qwen3-vl:2b"
     OLLAMA_KEEP_ALIVE: int = -1
     GOOGLE_API_KEY: str = ""

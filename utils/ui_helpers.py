@@ -6,23 +6,75 @@ from fpdf import FPDF
 from datetime import datetime
 
 
+def clean_llm_markdown(text: str) -> str:
+    """
+    Cleans up common markdown formatting issues from LLM responses.
+    - Ensures headers look like '### Header' with a space.
+    - Forces newlines BEFORE and AFTER header titles.
+    - Compresses list items to remove double gaps.
+    """
+    if not text:
+        return ""
+
+    # 0. Strip strange characters
+    text = text.lstrip("() \n")
+
+    headers = ["Recommendation", "Next Steps", "Tips", "Explanation", "Diagnosis"]
+
+    # 1. First, make sure every header name has the '### ' prefix correctly
+    for h in headers:
+        # If 'Header' is at the start without prefix, add it
+        if text.startswith(h):
+            text = "### " + text
+
+        # If 'Header' is in the middle fused with text, replace it with '\n\n### Header'
+        text = re.sub(rf"([^\n])({h})", r"\1\n\n### \2", text)
+
+        # If '###Header' (no space), replace with '### Header'
+        text = re.sub(rf"###({h})", r"### \1", text)
+
+    # 2. Fix headers fused with following content (missing newline AFTER)
+    for h in headers:
+        # Match '### HeaderName' followed by anything that isn't a newline
+        pattern = rf"(### {h})(\s*?)([^\n])"
+        text = re.sub(pattern, r"\1\n\3", text)
+
+    # 3. Ensure TWO newlines before any '###' header (unless it's at the very start)
+    text = re.sub(r"([^\n])(### )", r"\1\n\n\2", text)
+
+    # 4. List cleaning: compress list items (no double newline between items)
+    # This finds '- Item\n\n-' and turns it into '- Item\n-'
+    text = re.sub(r"(\n-\s.*)\n\n-", r"\1\n-", text)
+
+    # 5. Normalize all list items to use hyphens
+    text = re.sub(r"^\s*\*\s", "- ", text, flags=re.MULTILINE)
+
+    # 6. Tidy up excessive newlines
+    text = re.sub(r"\n{3,}", "\n\n", text)
+
+    return text.strip()
+
+
 def generate_pdf_report(
     image_bytes, prediction, accuracy, recommendation, heatmap_bytes=None
 ):
     """Generate a medical-style PDF report for the skin analysis."""
 
-    # 1. Setup PDF
+    # 1. Clean the input recommendation using our robust cleaner
+    clean_recommendation = clean_llm_markdown(recommendation)
+
+    # 2. Setup PDF
     pdf = FPDF()
     pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
 
-    # 2. Header (Professional Branding)
+    # 3. Header (Professional Branding)
     pdf.set_font("helvetica", "B", 24)
-    pdf.set_text_color(44, 62, 80)  # Dark Blue/Grey
+    pdf.set_text_color(44, 62, 80)
     pdf.cell(0, 15, "Skin Analysis Report", ln=True, align="C")
 
     pdf.set_font("helvetica", "I", 10)
-    pdf.set_text_color(127, 140, 141)  # Grey
+    pdf.set_text_color(127, 140, 141)
     pdf.cell(
         0,
         10,
@@ -32,10 +84,9 @@ def generate_pdf_report(
     )
     pdf.ln(5)
 
-    # 3. Images Section (Side-by-Side)
+    # 4. Images Section
     if heatmap_bytes:
-        f1_path = None
-        f2_path = None
+        f1_path = f2_path = None
         try:
             with (
                 tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as f1,
@@ -43,90 +94,75 @@ def generate_pdf_report(
             ):
                 f1.write(image_bytes)
                 f2.write(heatmap_bytes)
-                f1_path = f1.name
-                f2_path = f2.name
+                f1_path, f2_path = f1.name, f2.name
 
-            # Add images
-            img_w = 85
-            current_y = pdf.get_y()
-            pdf.image(f1_path, x=15, y=current_y, w=img_w)
-            pdf.image(f2_path, x=110, y=current_y, w=img_w)
+            img_w = 40
+            curr_y = pdf.get_y()
+            pdf.image(f1_path, x=55, y=curr_y, w=img_w)
+            pdf.image(f2_path, x=115, y=curr_y, w=img_w)
+            pdf.set_y(curr_y + 45)
 
-            pdf.set_y(current_y + 90)  # Adjust Y after images
-
-            # Labels for images
             pdf.set_font("helvetica", "B", 9)
             pdf.set_text_color(100, 100, 100)
-            pdf.set_xy(15, current_y + 86)
+            pdf.set_xy(55, curr_y + 41)
             pdf.cell(img_w, 5, "Original Scan", align="C")
-            pdf.set_xy(110, current_y + 86)
-            pdf.cell(img_w, 5, "(Heatmap)", align="C")
+            pdf.set_xy(115, curr_y + 41)
+            pdf.cell(img_w, 5, "(Analysis Heatmap)", align="C")
             pdf.ln(10)
         finally:
-            if f1_path and os.path.exists(f1_path):
-                os.unlink(f1_path)
-            if f2_path and os.path.exists(f2_path):
-                os.unlink(f2_path)
+            for p in [f1_path, f2_path]:
+                if p and os.path.exists(p):
+                    os.unlink(p)
 
-    # 4. Results Summary Box
+    # 5. Results Summary
     pdf.set_fill_color(236, 240, 241)
-    pdf.set_draw_color(44, 62, 80)
-    pdf.set_line_width(0.5)
-
     pdf.set_font("helvetica", "B", 14)
     pdf.set_text_color(44, 62, 80)
     pdf.cell(0, 12, f"  Condition Detected: {prediction}", border=1, ln=True, fill=True)
-
     pdf.set_font("helvetica", "", 12)
     pdf.cell(0, 10, f"  Confidence Score: {accuracy:.2%}", border=1, ln=True)
     pdf.ln(8)
 
-    # 5. AI Advisor Recommendations (Markdown to HTML)
+    # 6. AI Recommendations Header
     pdf.set_font("helvetica", "B", 14)
-    pdf.set_text_color(41, 128, 185)  # Medical Blue
+    pdf.set_text_color(41, 128, 185)
     pdf.cell(0, 10, "AI Advisor Recommendations", ln=True)
-    pdf.set_line_width(0.2)
-    pdf.line(pdf.get_x(), pdf.get_y(), pdf.get_x() + 190, pdf.get_y())
+    pdf.set_draw_color(41, 128, 185)
+    pdf.line(10, pdf.get_y(), 200, pdf.get_y())
     pdf.ln(5)
 
-    clean_recommendation = (
-        recommendation.replace("•", "- ").replace("—", "-").replace("–", "-")
-    )
-    clean_recommendation = (
-        clean_recommendation.replace("“", '"')
-        .replace("”", '"')
-        .replace("‘", "'")
-        .replace("’", "'")
-    )
+    # 7. Convert Markdown to PDF-friendly HTML
+    # Escape HTML entities first for safety
+    html_text = html.escape(clean_recommendation)
 
-    # Convert Markdown to basic HTML for fpdf2
+    # Process Bold
+    html_text = re.sub(r"\*\*(.*?)\*\*", r"<b>\1</b>", html_text)
 
-    html_content = html.escape(clean_recommendation)
-
-    html_content = re.sub(r"\*\*(.*?)\*\*", r"<b>\1</b>", html_content)
-
-    # Headers
-    html_content = re.sub(
-        r"^### (.*)$", r"<br><b>\1</b><br>", html_content, flags=re.MULTILINE
-    )
-    html_content = re.sub(
-        r"^## (.*)$", r"<br><b>\1</b><br>", html_content, flags=re.MULTILINE
+    # Process Headers (ensure they are on new lines and colored)
+    html_text = re.sub(
+        r"^### (.*)$",
+        r"<font color='#2980b9'><b>\1</b></font><br>",
+        html_text,
+        flags=re.MULTILINE,
     )
 
-    html_content = re.sub(r"^[-\*] (.*)$", r" - \1", html_content, flags=re.MULTILINE)
+    # Process List Items
+    html_text = re.sub(r"^[-\*] (.*)$", r" - \1", html_text, flags=re.MULTILINE)
 
-    # Newlines
-    html_content = html_content.replace("\n", "<br>")
+    # Convert newlines to breaks
+    html_text = html_text.replace("\n", "<br>")
 
-    html_content = (
-        html_content.encode("latin-1", "replace").decode("latin-1").replace("?", " ")
+    # Final encoding fix for standard FPDF fonts (latin-1)
+    html_text = (
+        html_text.encode("latin-1", "replace").decode("latin-1").replace("?", " ")
     )
 
+    # Write HTML
     pdf.set_font("helvetica", size=11)
     pdf.set_text_color(0, 0, 0)
-    pdf.write_html(f'<font face="helvetica" size="11">{html_content}</font>')
+    pdf.write_html(f'<font face="helvetica" size="11">{html_text}</font>')
 
-    # 6. Footer Disclaimer
+    # 8. Footer Disclaimer
     pdf.ln(20)
     pdf.set_font("helvetica", "I", 8)
     pdf.set_text_color(149, 165, 166)

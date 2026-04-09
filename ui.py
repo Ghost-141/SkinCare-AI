@@ -7,7 +7,7 @@ import io
 import os
 import json
 from datetime import datetime, timezone
-from utils.ui_helpers import generate_pdf_report
+from utils.ui_helpers import generate_pdf_report, clean_llm_markdown
 
 # Configuration
 API_BASE_URL = "http://localhost:8000/api/v1"
@@ -154,7 +154,7 @@ def render_main_content():
             if submit_button:
                 if uploaded_file and user_id and patient_name:
                     image = Image.open(uploaded_file)
-                    st.image(image, caption="Uploaded Image", width="stretch")
+                    st.image(image, caption="Uploaded Image", width=300)
 
                     with st.spinner("Analyzing..."):
                         try:
@@ -191,7 +191,7 @@ def render_main_content():
                                 
                                 # Use chunk_size=None for the entire stream for maximum efficiency
                                 stream_content = response.iter_content(
-                                    chunk_size=None, decode_unicode=True
+                                    chunk_size=1, decode_unicode=True
                                 )
 
                                 for chunk in stream_content:
@@ -243,13 +243,12 @@ def render_main_content():
                                 # 2. Consume the remaining chunks as LLM tokens
                                 def stream_generator(initial_token):
                                     if initial_token:
-                                        # Strip trailing newline if present (added by backend for flushing)
-                                        yield initial_token.rstrip("\n")
-                                    # Continue using the same iterator to get the rest of the stream
+                                        # Only clean the very first chunk if it's messy
+                                        yield clean_llm_markdown(initial_token)
+                                    # Continue yielding raw chunks to preserve natural spacing
                                     for chunk in stream_content:
                                         if chunk:
-                                            # Strip trailing newline if present
-                                            yield chunk.rstrip("\n")
+                                            yield chunk
 
                                 full_recommendation = st.write_stream(
                                     stream_generator(remaining_chunk)
