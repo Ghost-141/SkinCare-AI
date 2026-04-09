@@ -5,8 +5,7 @@ scripts:
   # Running the Application Locally
   dev: uv run uvicorn main:app --reload
   ui: uv run streamlit run ui.py
-  app: uv run python -m uvicorn main:app --host 0.0.0.0 --port 8000 & uv run streamlit run ui.py --server.port 8501
-  
+
   # Testing & Quality
   test: uv run pytest tests/test_api.py
   test-v: uv run pytest -v tests/test_api.py
