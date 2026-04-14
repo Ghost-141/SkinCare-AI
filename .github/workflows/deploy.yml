@@ -52,6 +52,11 @@ jobs:
           task-definition: ${{ env.ECS_TASK_DEFINITION }}
           container-name: ${{ env.CONTAINER_NAME }}
           image: ${{ steps.build-image.outputs.image }}
+          environment-variables: |
+            GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }}
+            DATABASE_URL=${{ secrets.RDS_DATABASE_URL }}
+            ENV_MODE=prod
+            LLM_PROVIDER=Gemini
 
       - name: Deploy Amazon ECS task definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2

@@ -28,6 +28,10 @@
         {
           "name": "LLM_PROVIDER",
           "value": "Gemini"
+        },
+        {
+          "name": "GOOGLE_API_KEY",
+          "value": "REPLACE_ME_OR_USE_SECRET"
         }
       ],
       "logConfiguration": {
