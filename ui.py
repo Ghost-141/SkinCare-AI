@@ -92,7 +92,7 @@ def render_sidebar():
             "Available Weight Files:", options=available_models, index=default_index
         )
 
-        if st.button("Reload Backend Model", width="stretch"):
+        if st.button("Instant Model Switch", width="stretch"):
             with st.spinner(f"Switching..."):
                 try:
                     resp = requests.post(
@@ -102,7 +102,7 @@ def render_sidebar():
                     if resp.status_code == 200:
                         fetch_available_models.clear()
                         fetch_health_status.clear()
-                        st.success(f"Model Updated!")
+                        st.success(f"Switched to {selected_model}!")
                     else:
                         st.error("Failed to switch model.")
                 except Exception as e:

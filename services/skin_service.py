@@ -2,27 +2,29 @@ import json
 from pathlib import Path
 import torch
 import warnings
+import os
+from PIL import Image
+from torchvision import transforms
+from services.interface.analysis_interface import ISkinAnalysis
+from core.config import settings
+from core.logger import logger
 
 # Suppress TorchScript load deprecation warning
 warnings.filterwarnings(
     "ignore", category=DeprecationWarning, message="`torch.jit.load` is deprecated"
 )
 
-from torchvision import transforms
-from PIL import Image
-from services.interface.analysis_interface import ISkinAnalysis
-from core.config import settings
-from core.logger import logger
-import os
-
-
 class SkinService(ISkinAnalysis):
     def __init__(self):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.classes = self.load_class_names("./data/class_mapping.json")
-        self.current_model_path = settings.MODEL_PATH
-        self.model_type = "jit"
-        self.model = self.load_model(self.current_model_path)
+        
+        # Dictionary to store pre-loaded models
+        self.models = {}
+        self.current_model_name = "EfficientNet_B0.pt"
+        
+        # Pre-load all available models for instant switching
+        self.preload_all_models()
 
         self.transform = transforms.Compose(
             [
@@ -32,56 +34,47 @@ class SkinService(ISkinAnalysis):
             ]
         )
 
+    def preload_all_models(self):
+        """Load all .pt files in models/weights into memory on startup."""
+        model_dir = Path("models/weights")
+        for model_path in model_dir.glob("*.pt"):
+            name = model_path.name
+            try:
+                logger.info(f"Pre-loading model: {name}...")
+                self.models[name] = self._load_single_model(str(model_path))
+            except Exception as e:
+                logger.error(f"Failed to pre-load {name}: {e}")
+
+    def _load_single_model(self, model_path: str):
+        """Internal helper to load a model based on its type."""
+        # Case 1: YOLO
+        if "yolo" in os.path.basename(model_path).lower():
+            from ultralytics import YOLO
+            return {"type": "yolo", "instance": YOLO(model_path)}
+
+        # Case 2: TorchScript (EfficientNet, ResNet)
+        try:
+            model = torch.jit.load(model_path, map_location=self.device)
+            model.to(self.device)
+            model.eval()
+            return {"type": "jit", "instance": model}
+        except Exception as e:
+            # Fallback for complex weights
+            from ultralytics import YOLO
+            return {"type": "yolo", "instance": YOLO(model_path)}
+
     def load_class_names(self, path):
         with open(path, "r") as f:
             return json.load(f)
 
-    def load_model(self, model_path: str):
-        try:
-            if not os.path.exists(model_path):
-                raise FileNotFoundError(
-                    f"Critical: Model file not found at {model_path}"
-                )
-
-            # Try loading as YOLO if "yolo" in the path
-            if "yolo" in os.path.basename(model_path).lower():
-                from ultralytics import YOLO
-
-                model = YOLO(model_path)
-                self.model_type = "yolo"
-                logger.info(f"Successfully loaded YOLO model from {model_path}")
-                return model
-
-            # Load as TorchScript
-            try:
-                model = torch.jit.load(model_path, map_location=self.device)
-                self.model_type = "jit"
-                logger.info(f"Successfully loaded TorchScript model from {model_path}")
-                model.to(self.device)
-                model.eval()
-                return model
-            except Exception as e:
-                # If jit fails, try ultralytics as fallback
-                from ultralytics import YOLO
-
-                model = YOLO(model_path)
-                self.model_type = "yolo"
-                logger.info(f"Fallen back to YOLO for {model_path}")
-                return model
-
-        except Exception as e:
-            logger.error(f"Failed to load model: {str(e)}")
-            raise e
-
     def list_models(self):
-        model_dir = Path("models/weights")
-        return [f.name for f in model_dir.glob("*.pt")]
+        return list(self.models.keys())
 
     def load_model_by_name(self, model_name: str):
-        model_path = os.path.join("models/weights", model_name)
-        if os.path.exists(model_path):
-            self.model = self.load_model(model_path)
-            self.current_model_path = model_path
+        """Instant switch between pre-loaded models."""
+        if model_name in self.models:
+            self.current_model_name = model_name
+            logger.info(f"Switched active model to: {model_name}")
             return True
         return False
 
@@ -89,43 +82,40 @@ class SkinService(ISkinAnalysis):
         if not image_path or not os.path.exists(image_path):
             raise ValueError(f"Image path does not exist: {image_path}")
 
-        try:
-            if self.model_type == "yolo":
-                results = self.model(image_path, verbose=False)
-                if not results or len(results) == 0:
-                    raise RuntimeError("YOLO model returned no results")
+        model_entry = self.models.get(self.current_model_name)
+        if not model_entry:
+            raise RuntimeError(f"Active model '{self.current_model_name}' not loaded.")
 
+        model_type = model_entry["type"]
+        model = model_entry["instance"]
+
+        try:
+            if model_type == "yolo":
+                results = model(image_path, verbose=False)
                 result = results[0]
                 probs = result.probs
-                if probs is None:
-                    raise RuntimeError("YOLO model results contain no probabilities")
-
                 confidence = float(probs.top1conf.item())
                 index = int(probs.top1)
-
-                # Use class mapping from JSON if possible, otherwise clean YOLO names
+                
                 if index < len(self.classes):
                     prediction = self.classes[index]
                 else:
-                    # Fallback to YOLO names
-                    raw_name = result.names[index]
-                    import re
-
-                    prediction = re.sub(r"^\d+\.\s*", "", raw_name)  # Strip prefixes
-
+                    prediction = result.names[index]
                 return prediction, confidence, index
 
+            # TorchScript Inference
             image = Image.open(image_path).convert("RGB")
             image = self.transform(image).unsqueeze(0).to(self.device)
 
             with torch.no_grad():
-                outputs = self.model(image)
+                outputs = model(image)
                 probabilities = torch.nn.functional.softmax(outputs[0], dim=0)
                 confidence, index = torch.max(probabilities, 0)
 
             index_val = index.item()
             prediction = self.classes[index_val]
             return prediction, confidence.item(), index_val
+
         except Exception as e:
             logger.error(f"Prediction Error for {image_path}: {str(e)}")
             raise RuntimeError(f"Model prediction failed: {str(e)}") from e

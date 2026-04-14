@@ -6,7 +6,7 @@
       "name": "skin-disease-app",
       "image": "270758478688.dkr.ecr.us-east-1.amazonaws.com/skincare-ai:latest",
       "cpu": 1024,
-      "memory": 1536,
+      "memory": 3072,
       "portMappings": [
         {
           "containerPort": 8000,
