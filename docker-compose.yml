@@ -2,24 +2,27 @@ services:
   skin_disease_app:
     build:
       context: .
-      dockerfile: Dockerfile # Set to Dockerfile.gpu for GPU support
+      dockerfile: Dockerfile
     container_name: skin_disease_ai
     ports:
       - "8000:8000"
       - "8501:8501"
     environment:
-      # These will now pull from your .env file
       - OLLAMA_BASE_URL=${OLLAMA_BASE_URL}
       - LLM_PROVIDER=${LLM_PROVIDER}
       - GOOGLE_API_KEY=${GOOGLE_API_KEY}
       - GROQ_API_KEY=${GROQ_API_KEY}
       - ENV_MODE=${ENV_MODE:-prod}
     volumes:
-      # Persist data outside the container
-      - ./data/db:/app/data/db
-      - ./data/uploads:/app/data/uploads
-      - ./logs:/app/logs
-    # Allow the container to reach the host's localhost (Ollama)
+      # Use Named Volumes instead of host paths
+      - db_data:/app/data/db
+      - uploads_data:/app/data/uploads
+      - app_logs:/app/logs
     extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: unless-stopped
+
+volumes:
+  db_data:
+  uploads_data:
+  app_logs:

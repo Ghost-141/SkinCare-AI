@@ -1,0 +1,48 @@
+{
+  "family": "skincare-task",
+  "networkMode": "bridge",
+  "containerDefinitions": [
+    {
+      "name": "skin-disease-app",
+      "image": "270758478688.dkr.ecr.us-east-1.amazonaws.com/skincare-ai:latest",
+      "cpu": 256,
+      "memory": 512,
+      "portMappings": [
+        {
+          "containerPort": 8000,
+          "hostPort": 8000,
+          "protocol": "tcp"
+        },
+        {
+          "containerPort": 8501,
+          "hostPort": 8501,
+          "protocol": "tcp"
+        }
+      ],
+      "essential": true,
+      "environment": [
+        {
+          "name": "ENV_MODE",
+          "value": "prod"
+        },
+        {
+          "name": "LLM_PROVIDER",
+          "value": "Gemini"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/skincare-ai",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ],
+  "requiresCompatibilities": [
+    "EC2"
+  ],
+  "executionRoleArn": "arn:aws:iam::270758478688:role/ecsInstanceRole",
+  "taskRoleArn": "arn:aws:iam::270758478688:role/ecsInstanceRole"
+}

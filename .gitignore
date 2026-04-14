@@ -12,6 +12,7 @@ htmlcov/
 *.jpg
 *.png
 *.ipynb
+*.pem
 
 # Virtual environments
 .venv/
@@ -50,3 +51,10 @@ Thumbs.db
 .vscode/
 .idea/
 .python-version
+
+
+create_ecs_cluster.py
+create_ecs_instance.py
+create_iam_role.py
+create_service_linked_role.py
+DEPLOYMENT.md
