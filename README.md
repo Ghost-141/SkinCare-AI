@@ -5,7 +5,7 @@ A production-grade medical AI system for skin disease classification and LLM-pow
 
 ## 🚀 Features
 
-- **Disease Detection:** Image classification using ResNet-50 / EfficientNet-B0 / Yolov8.
+- **Disease Detection:** Image classification using ResNet-50 / EfficientNet-B0 / Yolov8..
 - **LLM Integration:** Real-time advice via Groq (Cloud) or Ollama (Local) LLM.
 - **Patient Management:** Track history by Patient ID and Name.
 - **Reports:** Automated PDF report generation with patient details, AI recommendations and download full report.
