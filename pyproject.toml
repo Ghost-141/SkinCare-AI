@@ -1,7 +1,7 @@
 [project]
 name = "skin-disease"
 version = "0.1.0"
-description = "Add your description here"
+description = "You Personal SkinCare Assistant"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
