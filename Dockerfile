@@ -34,7 +34,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     ENV_MODE=prod \
     STREAMLIT_SERVER_PORT=8501 \
     STREAMLIT_SERVER_ADDRESS=0.0.0.0 \
-    STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
+    STREAMLIT_BROWSER_GATHER_USAGE_STATS=false \
+    MPLCONFIGDIR=/tmp/matplotlib
 
 # Install runtime-only system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
