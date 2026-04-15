@@ -21,6 +21,7 @@ from core.config import settings
 from core.logger import logger
 from utils.file_validator import validate_upload
 from utils.visualization import create_and_save_heatmap
+from utils.s3_client import s3_client
 from anyio import to_thread
 import shutil
 import os
@@ -108,12 +109,25 @@ async def analyze_skin(
             create_and_save_heatmap, model_path, file_path, heatmap_path, index
         )
 
+        # 2.2 Sync to S3 if enabled
+        if s3_client.enabled:
+            s3_image_key = f"uploads/{os.path.basename(file_path)}"
+            s3_heatmap_key = f"uploads/{os.path.basename(heatmap_path)}"
+            
+            await to_thread.run_sync(s3_client.upload_file, file_path, s3_image_key)
+            await to_thread.run_sync(s3_client.upload_file, heatmap_path, s3_heatmap_key)
+            
+            # Store S3 key instead of local path in DB
+            db_image_path = s3_image_key
+        else:
+            db_image_path = file_path
+
         # 3. Create Initial DB Log
         db_log = SkinAnalysisLog(
             user_id=user_id,
             patient_name=patient_name,
             age=age,
-            image_path=file_path,
+            image_path=db_image_path,
             prediction=prediction,
             accuracy=confidence,
             llm_recommendation="Generating recommendation...",
@@ -125,6 +139,11 @@ async def analyze_skin(
         async def combined_generator():
 
             full_recommendation = []
+            
+            # Use presigned URL for frontend if using S3
+            display_heatmap = heatmap_path
+            if s3_client.enabled:
+                display_heatmap = s3_client.get_presigned_url(f"uploads/{os.path.basename(heatmap_path)}")
 
             # Metadata chunk
             metadata = {
@@ -133,7 +152,7 @@ async def analyze_skin(
                 "age": age,
                 "prediction": prediction,
                 "accuracy": confidence,
-                "heatmap_path": heatmap_path,
+                "heatmap_path": display_heatmap,
                 "created_at": (
                     db_log.created_at.isoformat()
                     if db_log.created_at
@@ -174,4 +193,11 @@ async def get_user_history(user_id: str, db: AsyncSession = Depends(get_db)):
         .order_by(SkinAnalysisLog.created_at.desc())
     )
     logs = result.scalars().all()
+    
+    # If S3 is enabled, convert keys to URLs
+    if s3_client.enabled:
+        for log in logs:
+            if log.image_path and not log.image_path.startswith("data/"):
+                log.image_path = s3_client.get_presigned_url(log.image_path)
+    
     return logs

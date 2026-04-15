@@ -41,11 +41,11 @@ class SkinService(ISkinAnalysis):
             name = model_path.name
             try:
                 logger.info(f"Pre-loading model: {name}...")
-                self.models[name] = self._load_single_model(str(model_path))
+                self.models[name] = self.load_model(str(model_path))
             except Exception as e:
                 logger.error(f"Failed to pre-load {name}: {e}")
 
-    def _load_single_model(self, model_path: str):
+    def load_model(self, model_path: str):
         """Internal helper to load a model based on its type."""
         # Case 1: YOLO
         if "yolo" in os.path.basename(model_path).lower():

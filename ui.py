@@ -222,7 +222,7 @@ def render_main_content():
                                     st.image(
                                         uploaded_file,
                                         caption="Original Image",
-                                        use_container_width=True,
+                                        width="stretch",
                                     )
                                 with res_col2:
                                     if "heatmap_path" in result and os.path.exists(
@@ -231,7 +231,7 @@ def render_main_content():
                                         st.image(
                                             result["heatmap_path"],
                                             caption="(Grad-CAM Heatmap)",
-                                            use_container_width=True,
+                                            width="stretch",
                                         )
                                     else:
                                         st.warning("Heatmap not available")
@@ -339,13 +339,30 @@ def render_main_content():
                                 c1, c2 = st.columns([1, 2])
 
                                 with c1:
-                                    if os.path.exists(record["image_path"]):
+                                    # Check if it's a URL (S3) or a local path
+                                    img_src = record["image_path"]
+                                    if img_src.startswith("http"):
                                         st.image(
-                                            record["image_path"],
+                                            img_src,
                                             caption="Scan Image",
-                                            use_container_width=True,
+                                            width="stretch",
                                         )
-                                        # Try to show heatmap if it exists
+                                    elif os.path.exists(img_src):
+                                        st.image(
+                                            img_src,
+                                            caption="Scan Image",
+                                            width="stretch",
+                                        )
+                                    else:
+                                        st.warning("Original image file not found.")
+
+                                    # For heatmaps in history, we reconstruct the key if using S3
+                                    if img_src.startswith("http"):
+                                        # In S3 mode, heatmap_path is reconstructible or passed in metadata
+                                        # For simplicity in this UI, we assume the user can see it in the detailed PDF
+                                        pass
+                                    else:
+                                        # Local mode logic
                                         heatmap_path = os.path.join(
                                             os.path.dirname(record["image_path"]),
                                             f"heatmap_{os.path.basename(record['image_path'])}",
@@ -354,12 +371,8 @@ def render_main_content():
                                             st.image(
                                                 heatmap_path,
                                                 caption="Analysis Heatmap",
-                                                use_container_width=True,
+                                                width="stretch",
                                             )
-                                    else:
-                                        st.warning(
-                                            "Original image file not found on server."
-                                        )
 
                                 with c2:
                                     st.write(

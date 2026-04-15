@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     MODEL_PATH: str = "models/weights/EfficientNet_B0.pt"
     DATABASE_URL: str = "sqlite+aiosqlite:///./data/db/skin_app.db"
     UPLOAD_DIR: str = "data/uploads"
+    S3_BUCKET: str = ""  # Set via environment variable in prod
 
     # File Upload Restrictions
     MAX_FILE_SIZE: int = 5 * 1024 * 1024  #  5MB

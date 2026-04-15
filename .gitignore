@@ -58,4 +58,8 @@ create_ecs_instance.py
 create_iam_role.py
 create_service_linked_role.py
 create_ecr_repo.py
+setup_ecs_service.py
+create_s3_bucket.py
+setup_ecs_service.py
+view_db_data.py
 DEPLOYMENT.md

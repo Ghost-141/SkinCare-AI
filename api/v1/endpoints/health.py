@@ -29,18 +29,21 @@ async def health_check(
     if "offline" in status:
         health_status["status"] = "unhealthy"
 
-    # 2. Check Skin Classification Model
+    # 2. Check Skin Classification Model (Pre-loaded Version)
     try:
-        if skin_service.model is not None:
+        active_model = skin_service.models.get(skin_service.current_model_name)
+        if active_model is not None:
             health_status["services"]["skin_model"] = {
                 "status": "loaded",
-                "device": str(skin_service.device),
-                "model_path": settings.MODEL_PATH
+                "active_model": skin_service.current_model_name,
+                "loaded_models": skin_service.list_models(),
+                "device": str(skin_service.device)
             }
         else:
             health_status["services"]["skin_model"] = "not_loaded"
             health_status["status"] = "degraded"
-    except Exception:
+    except Exception as e:
+        logger.error(f"Health check model error: {e}")
         health_status["services"]["skin_model"] = "error"
         health_status["status"] = "unhealthy"
 
@@ -149,7 +152,7 @@ async def get_stats(db: AsyncSession = Depends(get_db)):
 async def list_models(skin_service: SkinService = Depends(get_skin_service)):
     """List all available model files in the weights directory."""
     models = skin_service.list_models()
-    return {"available_models": models, "active_model": settings.MODEL_PATH}
+    return {"available_models": models, "active_model": skin_service.current_model_name}
 
 @router.post("/models/select")
 async def select_model(model_name: str, skin_service: SkinService = Depends(get_skin_service)):

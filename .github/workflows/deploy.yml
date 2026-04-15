@@ -55,6 +55,7 @@ jobs:
           environment-variables: |
             GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }}
             DATABASE_URL=${{ secrets.RDS_DATABASE_URL }}
+            S3_BUCKET=${{ secrets.S3_BUCKET }}
             ENV_MODE=prod
             LLM_PROVIDER=Gemini
 
