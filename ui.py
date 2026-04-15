@@ -7,7 +7,11 @@ import io
 import os
 import json
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo # Import ZoneInfo for explicit timezone handling
 from utils.ui_helpers import generate_pdf_report, clean_llm_markdown
+
+# Define Bangladesh timezone
+bangladesh_tz = ZoneInfo("Asia/Dhaka")
 
 # Configuration
 API_BASE_URL = "http://localhost:8000/api/v1"
@@ -334,7 +338,7 @@ def render_main_content():
                             if dt_obj.tzinfo is None:
                                 dt_obj = dt_obj.replace(tzinfo=timezone.utc)
                             
-                            local_dt = dt_obj.astimezone()
+                            local_dt = dt_obj.astimezone(bangladesh_tz)
 
                             date_str = local_dt.strftime("%Y-%m-%d")
                             time_str = local_dt.strftime("%I:%M %p")
