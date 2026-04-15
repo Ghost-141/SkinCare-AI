@@ -18,3 +18,4 @@ class SkinAnalysisLog(Base):
     llm_recommendation = Column(Text)
     llm_provider = Column(String)
     created_at = Column(DateTime, default=datetime.utcnow)
+    heatmap_path = Column(String, nullable=True) # New column to store heatmap S3 key or local path

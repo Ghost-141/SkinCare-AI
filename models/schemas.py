@@ -14,5 +14,6 @@ class AnalysisResponse(BaseModel):
     llm_recommendation: str
     llm_provider: str
     created_at: datetime
+    heatmap_path: Optional[str] = None # New field for heatmap path
 
     model_config = ConfigDict(from_attributes=True)

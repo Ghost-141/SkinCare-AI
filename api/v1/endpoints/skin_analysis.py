@@ -132,6 +132,7 @@ async def analyze_skin(
             accuracy=confidence,
             llm_recommendation="Generating recommendation...",
             llm_provider=settings.LLM_PROVIDER,
+            heatmap_path=s3_heatmap_key if s3_client.enabled else heatmap_path, # Store heatmap path
         )
         await commit_to_db(db, db_log)
         log_id = db_log.id
@@ -197,7 +198,12 @@ async def get_user_history(user_id: str, db: AsyncSession = Depends(get_db)):
     # If S3 is enabled, convert keys to URLs
     if s3_client.enabled:
         for log in logs:
+            # Convert original image path to presigned URL
             if log.image_path and not log.image_path.startswith("data/"):
                 log.image_path = s3_client.get_presigned_url(log.image_path)
+            
+            # Convert heatmap path to presigned URL
+            if log.heatmap_path and not log.heatmap_path.startswith("data/"):
+                log.heatmap_path = s3_client.get_presigned_url(log.heatmap_path)
     
     return logs
