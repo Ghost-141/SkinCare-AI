@@ -20,7 +20,7 @@ logger.remove()
 logger.add(
     sys.stdout,
     format="<green>{time:HH:mm:ss}</green> | <level>{level: <8}</level> | <level>{message}</level>",
-    level="WARNING",  # Only warnings and errors in console
+    level="INFO",  # Show INFO and above in console/CloudWatch
     colorize=True,
 )
 

@@ -225,9 +225,7 @@ def render_main_content():
                                         width="stretch",
                                     )
                                 with res_col2:
-                                    if "heatmap_path" in result and os.path.exists(
-                                        result["heatmap_path"]
-                                    ):
+                                    if "heatmap_path" in result:
                                         st.image(
                                             result["heatmap_path"],
                                             caption="(Grad-CAM Heatmap)",
@@ -256,12 +254,19 @@ def render_main_content():
 
                                 def get_pdf():
                                     h_bytes = None
-                                    if "heatmap_path" in result and os.path.exists(
-                                        result["heatmap_path"]
-                                    ):
+                                    if "heatmap_path" in result and result["heatmap_path"].startswith("http"):
+                                        try:
+                                            h_resp = requests.get(result["heatmap_path"])
+                                            if h_resp.status_code == 200:
+                                                h_bytes = h_resp.content
+                                            else:
+                                                st.error(f"Failed to fetch heatmap from URL: {h_resp.status_code}")
+                                        except Exception as e:
+                                            st.error(f"Error fetching heatmap for PDF: {str(e)}")
+                                    elif "heatmap_path" in result and os.path.exists(result["heatmap_path"]):
                                         with open(result["heatmap_path"], "rb") as f:
                                             h_bytes = f.read()
-
+                                            
                                     return bytes(
                                         generate_pdf_report(
                                             img_byte_arr.getvalue(),
@@ -324,10 +329,11 @@ def render_main_content():
                             else:
                                 dt_obj = raw_date
 
+                            # Convert to local time
+                            # Ensure dt_obj is timezone-aware before converting to local time
                             if dt_obj.tzinfo is None:
                                 dt_obj = dt_obj.replace(tzinfo=timezone.utc)
-
-                            # Convert to local time
+                            
                             local_dt = dt_obj.astimezone()
 
                             date_str = local_dt.strftime("%Y-%m-%d")
@@ -339,41 +345,25 @@ def render_main_content():
                                 c1, c2 = st.columns([1, 2])
 
                                 with c1:
-                                    # Check if it's a URL (S3) or a local path
+                                    # Display original image
                                     img_src = record["image_path"]
-                                    if img_src.startswith("http"):
-                                        st.image(
-                                            img_src,
-                                            caption="Scan Image",
-                                            width="stretch",
-                                        )
-                                    elif os.path.exists(img_src):
+                                    if img_src: # Check if img_src is not empty
                                         st.image(
                                             img_src,
                                             caption="Scan Image",
                                             width="stretch",
                                         )
                                     else:
-                                        st.warning("Original image file not found.")
+                                        st.warning("Original image not found.")
 
-                                    # For heatmaps in history, we reconstruct the key if using S3
-                                    if img_src.startswith("http"):
-                                        # In S3 mode, heatmap_path is reconstructible or passed in metadata
-                                        # For simplicity in this UI, we assume the user can see it in the detailed PDF
-                                        pass
-                                    else:
-                                        # Local mode logic
-                                        heatmap_path = os.path.join(
-                                            os.path.dirname(record["image_path"]),
-                                            f"heatmap_{os.path.basename(record['image_path'])}",
+                                    # Display heatmap for history (if available)
+                                    heatmap_src = record.get("heatmap_path")
+                                    if heatmap_src:
+                                        st.image(
+                                            heatmap_src,
+                                            caption="Analysis Heatmap",
+                                            width="stretch",
                                         )
-                                        if os.path.exists(heatmap_path):
-                                            st.image(
-                                                heatmap_path,
-                                                caption="Analysis Heatmap",
-                                                width="stretch",
-                                            )
-
                                 with c2:
                                     st.write(
                                         f"**Patient Name:** {record.get('patient_name', 'N/A')}"
@@ -393,20 +383,39 @@ def render_main_content():
                                         f"Generate PDF Report (Scan #{record['id']})",
                                         key=f"hist_pdf_{record['id']}",
                                     ):
-                                        if os.path.exists(record["image_path"]):
-                                            with open(record["image_path"], "rb") as f:
-                                                img_data = f.read()
+                                        img_data = None
+                                        if record["image_path"]:
+                                            if record["image_path"].startswith("http"):
+                                                try:
+                                                    img_resp = requests.get(record["image_path"])
+                                                    if img_resp.status_code == 200:
+                                                        img_data = img_resp.content
+                                                    else:
+                                                        st.error(f"Failed to fetch image from URL: {img_resp.status_code}")
+                                                except Exception as e:
+                                                    st.error(f"Error fetching image for PDF: {str(e)}")
+                                            elif os.path.exists(record["image_path"]):
+                                                with open(record["image_path"], "rb") as f:
+                                                    img_data = f.read()
+                                            else:
+                                                st.error("Original image file not found.")
 
-                                            # load heatmap if it exists
-                                            h_data = None
-                                            h_path = os.path.join(
-                                                os.path.dirname(record["image_path"]),
-                                                f"heatmap_{os.path.basename(record['image_path'])}",
-                                            )
-                                            if os.path.exists(h_path):
-                                                with open(h_path, "rb") as f:
+                                        h_data = None
+                                        if record.get("heatmap_path"):
+                                            if record["heatmap_path"].startswith("http"):
+                                                try:
+                                                    h_resp = requests.get(record["heatmap_path"])
+                                                    if h_resp.status_code == 200:
+                                                        h_data = h_resp.content
+                                                    else:
+                                                        st.error(f"Failed to fetch heatmap from URL: {h_resp.status_code}")
+                                                except Exception as e:
+                                                    st.error(f"Error fetching heatmap for PDF: {str(e)}")
+                                            elif os.path.exists(record["heatmap_path"]):
+                                                with open(record["heatmap_path"], "rb") as f:
                                                     h_data = f.read()
-
+                                        
+                                        if img_data:
                                             pdf_bytes = generate_pdf_report(
                                                 img_data,
                                                 record["prediction"],
@@ -423,9 +432,7 @@ def render_main_content():
                                                 key=f"dl_link_{record['id']}",
                                             )
                                         else:
-                                            st.error(
-                                                "Cannot generate PDF: Original image is missing."
-                                            )
+                                            st.error("Cannot generate PDF: Original image data is missing.")
                     else:
                         st.info(
                             f"No previous analysis records found for Patient ID: **{search_id}**"
