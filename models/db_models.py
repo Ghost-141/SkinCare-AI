@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Float, Text, DateTime
 from sqlalchemy.orm import declarative_base
-from datetime import datetime, timezone
+from datetime import datetime
 
 Base = declarative_base()
 
@@ -17,4 +17,4 @@ class SkinAnalysisLog(Base):
     accuracy = Column(Float)
     llm_recommendation = Column(Text)
     llm_provider = Column(String)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=datetime.utcnow)
