@@ -62,4 +62,5 @@ setup_ecs_service.py
 create_s3_bucket.py
 setup_ecs_service.py
 view_db_data.py
+check_rds_status.py
 DEPLOYMENT.md

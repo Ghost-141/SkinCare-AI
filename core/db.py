@@ -4,6 +4,11 @@ from core.config import settings
 from models.db_models import Base
 from core.logger import logger
 
+
+# --- ADD THIS LINE ---
+logger.info(f"Effective DATABASE_URL: {settings.DATABASE_URL}")
+
+
 # Create the asynchronous SQLAlchemy engine
 engine = create_async_engine(settings.DATABASE_URL)
 
@@ -16,6 +21,7 @@ AsyncSessionLocal = async_sessionmaker(
     expire_on_commit=False,
 )
 
+
 async def create_db_and_tables():
     """Load and initialize database tables asynchronously."""
     try:
@@ -26,6 +32,7 @@ async def create_db_and_tables():
         logger.error(f"Error initializing database: {str(e)}")
         raise
 
+
 async def check_db_status():
     """Check the database connection status asynchronously."""
     try:
@@ -35,6 +42,7 @@ async def check_db_status():
     except Exception as e:
         logger.error(f"Database status check failed: {str(e)}")
         return f"offline: {str(e)}"
+
 
 async def commit_to_db(db_session: AsyncSession, model_instance):
     """Commit an instance to the database safely using AsyncSession."""
